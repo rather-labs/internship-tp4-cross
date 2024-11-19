@@ -32,7 +32,7 @@ tutorial: https://github.com/gabrocheleau/merkle-patricia-trees-examples
 Generate receiptTrie, obtain root and proof, verify proof
 
 ```bash
-node --env-file=.env .\mpt.js
+node --env-file=.env .\test.js
 ```
 
 ## Run mpt_transactions.ts
@@ -40,5 +40,5 @@ node --env-file=.env .\mpt.js
 Generate transactionTrie, uses Transaction.serialization()
 
 ```bash
-npx ts-node .\mpt2.ts
+npx ts-node .\mpt_transactions.ts
 ```

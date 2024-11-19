@@ -1,7 +1,7 @@
 const { createMPT, verifyMerkleProof, createMerkleProof } = require('@ethereumjs/mpt') 
 const { bytesToHex, MapDB, hexToBytes, concatBytes} = require('@ethereumjs/util')
 const rlp = require('@ethereumjs/rlp')
-const { getTransactionReceipt, getBlockReceipts, getBlockByNumber} = require('./rpc-eth')
+const { getTransactionReceipt, getBlockReceipts, getBlockByNumber} = require('./rpc')
 
 function serializeReceipt(receipt) {
     const Data = [
@@ -20,14 +20,12 @@ function serializeReceipt(receipt) {
     return rlp.encode(Data)
 }
 
-async function main() {
+async function get_proof(txHash) {
     // Create merkle patricia trie
     const db = new MapDB() 
     const trie = await createMPT({ db: db});
    
     try {
-        // Transaction
-        const txHash = "0x0c8e5bfe8af1a3cf888ea1bfe22413f4bdf8b6bc195696a983e6fd4b2b6539a5"
         const receiptRPC = await getTransactionReceipt(txHash);
         const blockNumber = receiptRPC.result.blockNumber;
 
@@ -60,6 +58,8 @@ async function main() {
 
         // Get receipt proof from trie
         console.log("Verified: " + (bytesToHex(verifiedValue) === bytesToHex(serializeReceipt(blockReceipts[indexToVerify]))))
+        // 
+        return proof
 
     }
     catch (error) {
@@ -67,4 +67,7 @@ async function main() {
     }
 }
 
-main();
+module.exports = {
+    serializeReceipt,
+    get_proof
+}

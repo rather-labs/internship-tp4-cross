@@ -1,7 +1,7 @@
 const { createMPT, verifyMerkleProof, createMerkleProof } = require('@ethereumjs/mpt') 
 const { bytesToHex, MapDB, hexToBytes, concatBytes} = require('@ethereumjs/util')
 const rlp = require('@ethereumjs/rlp')
-const { getTransactionReceipt, getBlockReceipts, getBlockByNumber} = require('./rpc-eth')
+const { getTransactionReceipt, getBlockReceipts, getBlockByNumber} = require('./rpc')
 
 function serializeReceipt(receipt) {
     const Data = [

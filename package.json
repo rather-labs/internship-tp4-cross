@@ -10,12 +10,9 @@
   "author": "",
   "license": "ISC",
   "dependencies": {
-    "@ethereumjs/common": "^4.4.0",
     "@ethereumjs/mpt": "^7.0.0-alpha.1",
     "@ethereumjs/rlp": "^5.0.2",
-    "@ethereumjs/trie": "^6.2.1",
     "@ethereumjs/util": "^9.1.0",
-    "@ethereumjs/vm": "^8.1.1",
     "https": "^1.0.0"
   },
   "devDependencies": {
