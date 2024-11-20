@@ -1,5 +1,8 @@
+//  use ethers instead of https for websocket conection
+// More popular
+// Active developement and maintainance
+// https not updated but not known security issues for 10 years
 const https = require('https');
-
 
 const ENDPOINTS = {
     "eth": {
@@ -157,10 +160,43 @@ async function getBlockByNumber(blockNumber, opts={}) {
     return makeRpcRequest(ENDPOINTS[chain][rpc], options, data);
 }
 
+async function getLastBlockNumber(opts={}) {
+    const { chain = "eth", rpc='alchemy' } = opts;
+
+    const data = JSON.stringify({
+        jsonrpc: '2.0',
+        method: 'eth_blockNumber',
+        params: [],
+        id: 1,
+    })
+
+    const options = {
+        method: 'POST',
+        headers: {
+            'Content-Type': 'application/json',
+            'Content-Length': data.length,
+        },
+    }
+    
+    return makeRpcRequest(ENDPOINTS[chain][rpc], options, data);
+}
+
+// Subscription API -> to receive events as they are being produced
+// 
+// https://docs.alchemy.com/reference/subscription-api
+// eth_getLogs -> To restore relayer after a shutdown
+// Returns an array of all logs matching a given filter object.
+// eth_getFilterLogs 
+// Returns an array of all logs matching filter with given id. 
+// Can compute the same results with an eth_getLogs call.
+
+
+
 module.exports = {
     getTransactionReceipt,
     getTransactionByHash,
     getBlockReceipts,
     getBlockByHash,
-    getBlockByNumber
+    getBlockByNumber,
+    getLastBlockNumber
 }

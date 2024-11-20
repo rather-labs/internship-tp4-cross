@@ -13,6 +13,8 @@
     "@ethereumjs/mpt": "^7.0.0-alpha.1",
     "@ethereumjs/rlp": "^5.0.2",
     "@ethereumjs/util": "^9.1.0",
+    "ethers": "^6.13.4",
+    "express": "^4.21.1",
     "https": "^1.0.0"
   },
   "devDependencies": {
