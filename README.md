@@ -1,44 +1,78 @@
-# POC Merkle Patricia Trie transaction receipt inclusion proof
+# Cross-chain communication protocol : Off chain elements
 
-## Rebuild receipt tree with EthereumJS client
+In this project we develop a cross blockchain communication protocol.
+In this repo off chain elements are implemented.
 
-src: https://ethereum.org/en/developers/docs/data-structures-and-encoding/patricia-merkle-trie/
+# Relayer
 
-path = rlp(transactionIndex)
+## Overview
 
-Type Receipt = concatenation of TransactionType and ReceiptPayload
+Relayers are the off chains agents that are in charge of listening to communication contract
+events and forwarding messages to the destintation blockchain.
 
-Type LegacyReceipt = rlp([status, cumulativeGasUsed, logsBloom, logs])
+It is also responsible of generating the inclusion proof and forwarding it along with the message.
 
-codigo fuente:
-https://github.com/ethereumjs/ethereumjs-monorepo/blob/d2f10abf767c30570a3ecf12812c039d18c46dda/packages/vm/src/buildBlock.ts#L167
+They are designed to function in a marketplace manner, with each message having an associated fee
+that is used to pay blockchain gas and the remainder is kept as an incentive by the relayer that
+fowards the message after reception confirmation.
 
-https://github.com/ethereumjs/ethereumjs-monorepo/blob/d2f10abf767c30570a3ecf12812c039d18c46dda/packages/vm/src/runBlock.ts#L767
+The relayer can ask the gas estimation in the destintation blockchain from a dedicated server to decide if the fee asociated to a message results in a desirable incentive.
 
-tutorial: https://github.com/gabrocheleau/merkle-patricia-trees-examples
+Additionaly, it waits for finality before forwarding the messages. In the context of this implementation, finality is defined in a per message manner as a number of blocks that are
+waited after the source block of the message. It's under the user responsability to
+define the number of blocks in accordance to source blockchain's finality considerations.
 
-## Notas
+## Features
 
-- To verify a specific type of data, you must refer to the appropriate root hash:
+- Listens to communication contract events
+- Verify inclusion of message in blockchain
+- Generate message inclusion proof for communication contract
+- Request fee estimation from server
+- Ask for incentive after message is received by destination blockchain
+- Wait for finality for each message
 
-  - If you want to verify an account balance or nonce, use the state root.
-  - If you want to verify a transaction’s inclusion, use the transactions root.
-  - If you want to verify a transaction’s receipt, use the receipts root.
+### Events that are listened
 
-- The Returned receipt can be of type Receipt which is defined as the concatenation of TransactionType and ReceiptPayload or it can be of type LegacyReceipt which is defined as rlp([status, cumulativeGasUsed, logsBloom, logs]).
+- New blocks emited
+- Message emitted
+- Message recieved
+- Fees for message are updated
 
-## Run mpt.js
+## Run examples
+
+### mpt.js
 
 Generate receiptTrie, obtain root and proof, verify proof
 
 ```bash
-node --env-file=.env .\test.js
+node --env-file=.env .\mpt.js
 ```
 
-## Run mpt_transactions.ts
+### mpt_transactions.ts
 
 Generate transactionTrie, uses Transaction.serialization()
 
 ```bash
 npx ts-node .\mpt_transactions.ts
 ```
+
+### relayer_server.js
+
+Initializes a relayer that listen to events, new blocks and past events on start up.
+for a number of chains
+
+```bash
+node --env-file=.env .\relayer_server.js
+```
+
+## Development Notes
+
+## TODO
+
+- Handle rpc provider change upon loss of service from current provider
+- Add actual information for communication contracts in supported blockchains
+- Implement consensus among multiple relayers
+
+## License
+
+This project is licensed under the MIT License. See the LICENSE file for details.
