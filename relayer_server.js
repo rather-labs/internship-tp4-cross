@@ -1,5 +1,8 @@
-const { serializeReceipt, get_proof } = require('./mpt') // http requests
-const { get_websocket_provider } = require('./websocket') // http requests
+const { serializeReceipt, get_proof } = require('./mpt') // 
+const { initializeWebSocket,
+        listenForNewBlocks, 
+        listenForContractEvents 
+      } = require('./websocket') //
 
 
 const express = require("express");
@@ -10,10 +13,18 @@ const app = express();
 const PORT = 3000;
 
 // Initialize Ethers.js provider
-const provider = get_websocket_provider(
-  process.env.CONTRACT_ADDRESS, 
-  {contractABI: process.env.CONTRACT_ABI}
+const provider = initializeWebSocket(
+  {
+    chain: "eth", 
+    rpc:'alchemy'
+  }
 )
+
+listenForNewBlocks(provider)
+listenForContractEvents(provider, 
+                        process.env.ETH_CONTRACT_ADDRESS, 
+                        process.env.EVENT_SIGNATURE, 
+                        JSON.parse(process.env.CONTRACT_ABI))
 
 // Optional: Add a health check endpoint
 app.get('/health', (req, res) => {

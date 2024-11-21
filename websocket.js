@@ -1,9 +1,5 @@
-//  use ethers instead of web3 for websocket conection
-// More popular
-// less restrictive licence
-// less ammount of security issues found 
-const { ethers } = require('ethers');
-const { parseJsonText } = require('typescript');
+
+const { createPublicClient,  parseAbiItem, webSocket, decodeEventLog  } = require('viem');
 
 const ENDPOINTS = {
     "eth": {
@@ -21,53 +17,79 @@ const ENDPOINTS = {
     },
 }
 
-function reconnectProvider(endpoint) {
-    console.log('Reconnecting WebSocket provider...');
-    setTimeout(() => initializeProvider(), 1000); // Retry after 1 second
-  };
-
-function get_websocket_provider( address, opts={} ) {
-    const { chain = "eth", rpc='alchemy', topics=[], contractABI = ''} = opts;
-    // Replace with your WebSocket provider URL
-    const provider = new ethers.WebSocketProvider(ENDPOINTS[chain][rpc]);
-    
-    // Define the contract address and event filter
+// Function to listen for contract events in a specific block
+function listenForContractEvents(client, address, event, contractABI) {
+    // Get logs for the contract event
+    client.watchEvent({ address, event:parseAbiItem(event),
+        onLogs: logs => {
+            logs.forEach((log) => {
+                console.log('Event Log - TxHash:', log.transactionHash);
+                // Parse the event log based on your contract ABI
+                const decoded = decodeEventLog({
+                  abi: contractABI,
+                  data: log.data,
+                  topics: log.topics,
+                });
+                //console.log('Parsed Event:', decoded);
+            })
+        }
+    })
+};
+// Function to listen for contract events in a specific block
+function listenForContractEventsInBlock(client, address, event, contractABI, blockNumber) {
+    // Define your event filter (e.g., ExampleEvent)
     const eventFilter = {
-      address, // Optional: Specify the contract address
-      topics, // Optional: Specify the event signature
+      address,
+      event:parseAbiItem(event),
+      block: blockNumber, // Listen for events in this block
     };
-    
-    // Subscribe to logs
-    provider.on(eventFilter, (log) => {
-      console.log('New Log:', log);
-    
-      // Decode log data if needed
-      if (contractABI.length > 0) {
-        const parsedLog = ethers.utils.defaultAbiCoder.decode(JSON.parse(contractABI), log.data);
-        console.log('Parsed Log:', parsedLog);
-      }
-    });
 
-    // reconection to handle rpc timeout
-    provider.on('close', () => {
-        // TODO: implement RPC change logic
-        console.log('WebSocket closed. Reconnecting...');
-        setTimeout(() => {
-          provider = new ethers.providers.WebSocketProvider(ENDPOINTS[chain][rpc]);
-        }, 1000);
+    // Get logs for the contract event
+    client.getLogs(eventFilter).then((logs) => {
+      logs.forEach((log) => {
+        console.log('Event Log in Block - TxHash:', log.transactionHash)
+        // Parse the event log based on your contract ABI
+        const decoded = decodeEventLog({
+          abi: contractABI,
+          data: log.data,
+          topics: log.topics,
+        });
+        //console.log('Parsed Event in Block:', decoded);
       });
-    
-    // Handle connection errors
-    provider._websocket.on('error', (err) => {
-      console.error('WebSocket Error:', err);
+    }).catch((error) => {
+      console.error('Error fetching logs for block:', error);
     });
+};
+// Listen for new blocks
+function listenForNewBlocks(client, opts={}) {
+    const { address=null, event='', contractABI = []} = opts;
+    client.watchBlockNumber({onBlockNumber: blockNumber => {
+      console.log(`New block: ${blockNumber}`);
+      if (address) {
+        listenForContractEventsInBlock(client, address, event, contractABI, blockNumber)
+      }
+    }
+});
+};
 
-    return provider
-
+// Initialize the Viem WebSocket client 
+// Listens to event and gets block number
+function initializeWebSocket(opts){    
+    const { chain = "eth", rpc='alchemy'} = opts;
+    // Create client
+    const client = createPublicClient({
+        transport: webSocket(ENDPOINTS[chain][rpc]),
+        reconnect: {
+            attempts: 10, 
+            delay: 1_000, // 1 second
+        }
+    })
+    return (client)
 }
 
 
-
 module.exports = {
-    get_websocket_provider
+    initializeWebSocket,
+    listenForNewBlocks,
+    listenForContractEvents
 }
