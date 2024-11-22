@@ -1,48 +1,45 @@
 
-const { createPublicClient,  parseAbiItem, webSocket, decodeEventLog, createWsTransport  } = require('viem');
+const { createPublicClient,  parseAbiItem, webSocket, decodeEventLog } = require('viem');
 const { mainnet, bsc, bscTestnet, hardhat, sepolia, holesky } = require('viem/chains');
 
 // create a WebSocket transport for developement using local hardhat chain
-const transport = createWsTransport({
-  url: process.env.WS_URL,
-});
 const ENDPOINTS = {
-    "eth": {
-        'infura' :'wss://mainnet.infura.io/v3/' + process.env.INFURA_PROJECT_ID,
-        'alchemy':'wss://eth-mainnet.g.alchemy.com/v2/' + process.env.ALCHEMY_PROJECT_ID,
-        'chain': mainnet
+    eth: {
+        infura  : 'wss://mainnet.infura.io/v3/' + process.env.INFURA_PROJECT_ID,
+        alchemy : 'wss://eth-mainnet.g.alchemy.com/v2/' + process.env.ALCHEMY_PROJECT_ID,
+        chain   : mainnet
     },
-    "sepolia":  {
-        'infura' : '',
-        'alchemy':'wss://eth-sepolia.g.alchemy.com/v2/'+ process.env.ALCHEMY_PROJECT_ID,
-        'chain':sepolia
+    sepolia:  {
+        infura  : '',
+        alchemy : 'wss://eth-sepolia.g.alchemy.com/v2/'+ process.env.ALCHEMY_PROJECT_ID,
+        chain   : sepolia
     },
-    "holesky":  {
-        'infura' : '',
-        'alchemy':'wss://eth-holesky.g.alchemy.com/v2/'+ process.env.ALCHEMY_PROJECT_ID,
-        'chain':holesky
+    holesky:  {
+        infura  : '',
+        alchemy : '', // holesky in alchemy doesn't allow websocket
+        chain   : holesky
     },
-    "bnb":  {
-        'infura' :'wss://stream.binance.com:9443/ws/',
-        'alchemy':'wss://bnb-mainnet.g.alchemy.com/v2'+ process.env.ALCHEMY_PROJECT_ID,
-        'chain':bsc
+    bnb:  {
+        infura  : 'wss://stream.binance.com:9443/ws/',
+        alchemy : 'wss://bnb-mainnet.g.alchemy.com/v2'+ process.env.ALCHEMY_PROJECT_ID,
+        chain   : bsc
     },
-    "bnb-testnet":  {
-        'infura' : '',
-        'alchemy':'wss://bnb-testnet.g.alchemy.com/v2/'+ process.env.ALCHEMY_PROJECT_ID,
-        'chain':bscTestnet
+    bnbTestnet:  {
+        infura  : '',
+        alchemy : 'wss://bnb-testnet.g.alchemy.com/v2/'+ process.env.ALCHEMY_PROJECT_ID,
+        chain   : bscTestnet
     },
-    "hardhat":  {
-        'infura' :transport,
-        'alchemy':transport,
-        'chain':hardhat // also can use localhost
+    hardhat:  {
+        infura  : process.env.WS_URL,
+        alchemy : process.env.WS_URL,
+        chain   : hardhat // also can use localhost
     },
 }
 
 // Initialize the Viem WebSocket client 
 // Listens to event and gets block number
 function initializeWebSocket(opts){    
-  const { chain = "eth", rpc='alchemy'} = opts;
+  const { chain = 'eth', rpc='alchemy'} = opts;
   // Create client
   const client = createPublicClient({
       chain:ENDPOINTS[chain]['chain'],
@@ -56,7 +53,7 @@ function initializeWebSocket(opts){
 }
 
 function initializeWalletClients(privateKey, opts){    
-const { chain = "eth", rpc='alchemy'} = opts;
+const { chain = 'eth', rpc='alchemy'} = opts;
 // Create client
 const client = createPublicClient({
     transport: webSocket(ENDPOINTS[chain][rpc]),

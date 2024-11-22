@@ -23,23 +23,23 @@ function sendMsgs(blockNumber, data) {
 
 function handleBlockNumber(blockNumber, data) {  
   data.blockNumber = blockNumber
-  console.log(`New block: ${data.blockNumber}`);
+  console.log(`New block on ${data.name}: ${data.blockNumber}`);
   sendMsgs(blockNumber, data)
 }
 function handleNewMsg(log, event, data) {  
-  console.log(`New Msg:`, event);
+  console.log(`New Msg on ${data.name}:`, event);
 }
 function handleUpdateFee(log, event, data) {  
-  console.log(`Update fees for msg:`, event);
+  console.log(`Update fees for msg of ${data.name}:`, event);
 }
 function handleMsgReceived(log, event, data) {
   // Pop msg from list of pending msgs
-  console.log(`Msg Received:`, event);
+  console.log(`Msg Received on ${data.name}:`, event);
 }
 // Blockchains that are linstened by the relayer
-const blockChains = ['sepolia'] // 'eth' / 'sepolia' / 'holesky' / 'bnb' / 'bnb-testnet' / 'hardhat'
+const blockChains = ['bnbTestnet', 'sepolia'] // 'eth' / 'sepolia' / 'bnb' / 'bnbTestnet' / 'hardhat'
 // Events that are listened
-const events = ['newMsg'] // 'newMsg' / 'updateFee' / 'receiveMsg'
+const events = [] // 'newMsg' / 'updateFee' / 'receiveMsg'
 // Functions for event handling,
 const eventsHandlingFunctions = [handleNewMsg, handleUpdateFee, handleMsgReceived]
 // RPC providers in the order of use
@@ -66,6 +66,7 @@ function setup_relayer(express,
     providers[chain] = initializeWebSocket({chain, rpc:RPCProviders[0]})
     // Initialize data per blockchain
     data[chain] = {
+      name: chain,
       incomingMsgs : [],
       finalityBlocks: [],
       blockNumber : 1
@@ -105,6 +106,8 @@ function setup_relayer(express,
   // Start the Express server
   app.listen(PORT, () => {
     console.log(`Server is running on port ${PORT}`);
+    console.log(`Listening to chains:`, blockChains);
+    console.log(`Listening to events:`, events);
   });
   
 }

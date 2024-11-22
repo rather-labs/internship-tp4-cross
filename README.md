@@ -5,8 +5,6 @@ In this repo off chain elements are implemented.
 
 # Relayer
 
-## Overview
-
 Relayers are the off chains agents that are in charge of listening to communication contract
 events and forwarding messages to the destintation blockchain.
 
@@ -76,3 +74,20 @@ node --env-file=.env .\relayer_server.js
 ## License
 
 This project is licensed under the MIT License. See the LICENSE file for details.
+
+# Server API (TODO)
+
+## Overview
+
+The server is in charge of fee estimation for each blockchain.
+
+It makes available and API to request fees both from relayers and front ends.
+
+# Front end (TODO)
+
+## Overview
+
+Provides an interface for user to start an session of the proof-of-concept game implemented
+and to play subsequent rounds.
+
+It also provides an interface to see message and game status.
