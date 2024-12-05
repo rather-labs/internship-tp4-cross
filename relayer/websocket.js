@@ -29,9 +29,14 @@ const ENDPOINTS = {
         alchemy : 'wss://bnb-testnet.g.alchemy.com/v2/'+ process.env.ALCHEMY_PROJECT_ID,
         chain   : bscTestnet
     },
-    hardhat:  {
-        infura  : process.env.WS_URL,
-        alchemy : process.env.WS_URL,
+    localhost_1:  {
+        infura  : process.env.WS_URL_1,
+        alchemy : process.env.WS_URL_1,
+        chain   : hardhat // also can use localhost
+    },
+    localhost_2:  {
+        infura  : process.env.WS_URL_2,
+        alchemy : process.env.WS_URL_2,
         chain   : hardhat // also can use localhost
     },
 }
@@ -132,7 +137,6 @@ async function callFunction(publicClient, walletClient, account,
   })
   await walletClient.writeContract(request)
 }
-
 
 module.exports = {
     initializeWebSocket,

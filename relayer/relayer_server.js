@@ -33,14 +33,15 @@ function handleUpdateFee(log, event, data) {
   console.log(`Update fees for msg of ${data.name}:`, event);
 }
 function handleMsgReceived(log, event, data) {
+  // wait for finality as defined per each blockchain to receive payment
   // Pop msg from list of pending msgs
   console.log(`Msg Received on ${data.name}:`, event);
 }
 // Blockchains that are linstened by the relayer
-const blockChains = ['bnbTestnet', 'sepolia'] // 'eth' / 'sepolia' / 'bnb' / 'bnbTestnet' / 'hardhat'
+const blockChains = ['localhost_1', 'localhost_2'] // 'eth' / 'sepolia' / 'bnb' / 'bnbTestnet' / 'localhost_1' / 'localhost_2'
 // Events that are listened
-const events = [] // 'newMsg' / 'updateFee' / 'receiveMsg'
-// Functions for event handling,
+const events = [['outgoing', 'OutboundMessage'], ['outgoing', 'UpdateMessageFee']] // ['outgoing', 'OutboundMessage'] / ['outgoing', 'UpdateMessageFee'] /  ['incoming', 'InboundMessage']
+// Functions for event handling, must be in the same order as events
 const eventsHandlingFunctions = [handleNewMsg, handleUpdateFee, handleMsgReceived]
 // RPC providers in the order of use
 const RPCProviders = ['alchemy', 'infura'] // 'alchemy' / 'infura'
@@ -50,7 +51,7 @@ const RPCProviders = ['alchemy', 'infura'] // 'alchemy' / 'infura'
 function setup_relayer(express, 
     blockChains = ['eth', 'bnb'],
     newBlockHandlingFunction = handleBlockNumber, 
-    events = ['newMsg', 'updateFee', 'msgReceived'],
+    events = [['outgoing', 'OutboundMessage'], ['outgoing', 'UpdateMessageFee'], ['incoming', 'InboundMessage']],
     eventsHandlingFunctions = [handleNewMsg, handleUpdateFee, handleMsgReceived],
     RPCProviders = ['alchemy', 'infura']
     ) {
@@ -78,9 +79,9 @@ function setup_relayer(express,
   //  blockChains.forEach((chain) => {
   //    for (let block = CONTRACT_INITIAL_BLOCKS[chain]; block <= data[chain].blockNumber; block++) {
   //      listenForContractEventsInBlock(providers[chain], 
-  //        CONTRACT_ADDRESSES[chain], 
-  //        EVENT_SIGNATURES[event], 
-  //        JSON.parse(CONTRACT_ABIS[chain]),
+  //        CONTRACT_ADDRESSES[event[0]][chain], 
+  //        EVENT_SIGNATURES[event[1]], 
+  //        JSON.parse(CONTRACT_ABIS[event[0]][chain]),
   //        block, 
   //        eventsHandlingFunctions[index],
   //        data[chain])
@@ -91,9 +92,9 @@ function setup_relayer(express,
   events.forEach((event, index) => {
     blockChains.forEach((chain) => {
       listenForContractEvents(providers[chain], 
-        CONTRACT_ADDRESSES[chain], 
-        EVENT_SIGNATURES[event], 
-        JSON.parse(CONTRACT_ABIS[chain]), 
+        CONTRACT_ADDRESSES[event[0]][chain], 
+        EVENT_SIGNATURES[event[1]], 
+        JSON.parse(CONTRACT_ABIS[event[0]][chain]), 
         eventsHandlingFunctions[index],
         data[chain])
     })
