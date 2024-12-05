@@ -20,6 +20,13 @@ const CONTRACT_ABIS = {
         localhost_2: '[{"type":"event","name":"OutboundMessage","inputs":[{"name":"data","type":"bytes","indexed":false},{"name":"sender","type":"address","indexed":false},{"name":"receiver","type":"address","indexed":false},{"name":"destinationBC","type":"uint256","indexed":false},{"name":"finalityNBlocks","type":"uint16","indexed":false},{"name":"messageNumber","type":"uint256","indexed":false},{"name":"taxi","type":"bool","indexed":false},{"name":"fee","type":"uint256","indexed":false}]},{"type":"event","name":"UpdateMessageFee","inputs":[{"name":"destinationBC","type":"uint256","indexed":false},{"name":"fee","type":"uint256","indexed":false},{"name":"messageNumber","type":"uint256","indexed":false}]}]',
     },
 }
+
+const CHAIN_IDS = {
+    1n:"eth",
+    11155111n:"sepolia", 
+    31337n:"localhost_1",
+    31338n:"localhost_2",
+}
 // Communication contract Adresses per blockchain
 const CONTRACT_ADDRESSES = {
     incoming:{
@@ -42,6 +49,7 @@ const EXTERNAL_ADDRESSES = {
     localhost_1:"0xf39Fd6e51aad88F6F4ce6aB8827279cffFb92266",
     localhost_2:"0xf39Fd6e51aad88F6F4ce6aB8827279cffFb92266",
 }
+
 // Block for communication contract deployment per blockchain (to search at relayer start)
 const CONTRACT_INITIAL_BLOCKS = {
     eth: 4634748,
@@ -55,5 +63,6 @@ module.exports = {
   CONTRACT_ABIS,
   CONTRACT_ADDRESSES,
   CONTRACT_INITIAL_BLOCKS,
-  EXTERNAL_ADDRESSES  
+  EXTERNAL_ADDRESSES,
+  CHAIN_IDS
 }

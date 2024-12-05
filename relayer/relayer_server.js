@@ -1,22 +1,23 @@
 const { serializeReceipt, get_proof } = require('./mpt') // 
 const { initializeWebSocket,
+        initializeWalletClient,
         listenForNewBlocks, 
         listenForContractEventsInBlock,
-        listenForContractEvents 
+        listenForContractEvents,
+        callFunction 
       } = require('./websocket') //
 const { EVENT_SIGNATURES,
         CONTRACT_ABIS, 
         CONTRACT_ADDRESSES,
-        CONTRACT_INITIAL_BLOCKS 
+        CONTRACT_INITIAL_BLOCKS,
+        CHAIN_IDS
       } = require('./contracts') //
 const express = require("express");
 
 function sendMsgs(blockNumber, data) {  
   data.incomingMsgs.forEach((msg, index) => {
     if (data.finalityBlocks[index] <= blockNumber) {
-      // TODO: send message
-      // simulateContract
-      // writeContract
+      //
     }
   })
 }
@@ -26,12 +27,27 @@ function handleBlockNumber(blockNumber, data) {
   console.log(`New block on ${data.name}: ${data.blockNumber}`);
   sendMsgs(blockNumber, data)
 }
+
 function handleNewMsg(log, event, data) {  
-  console.log(`New Msg on ${data.name}:`, event);
+  const chain = CHAIN_IDS[event.args.destinationBC]
+  event.blockNumber = log.blockNumber
+  event.address = log.address
+  // Inser event ordered by finality block
+  const finalityBlock = event.blockNumber+BigInt(event.args.finalityNBlocks)
+  const index = data[chain].finalityBlocks.findIndex((x) => x >= finalityBlock);
+  if (index === -1) {
+    data[chain].incomingMsgs.push(event)
+    data[chain].finalityBlocks.push(finalityBlock)
+  } else {
+    data[chain].incomingMsgs.splice(index, 0, event); 
+    data[chain].finalityBlocks.splice(index, 0, finalityBlock); 
+  }
 }
+
 function handleUpdateFee(log, event, data) {  
   console.log(`Update fees for msg of ${data.name}:`, event);
 }
+
 function handleMsgReceived(log, event, data) {
   // wait for finality as defined per each blockchain to receive payment
   // Pop msg from list of pending msgs
@@ -46,6 +62,12 @@ const eventsHandlingFunctions = [handleNewMsg, handleUpdateFee, handleMsgReceive
 // RPC providers in the order of use
 const RPCProviders = ['alchemy', 'infura'] // 'alchemy' / 'infura'
 
+// Websocket providers
+let providers = {}
+
+// wallet providers
+let walletClient = {}
+
 // TODO: handle rpc provider change upon loss of service from current provider
 // TODO: synchronize which relayer is relaying the msg before the receive msg event is emitted
 function setup_relayer(express, 
@@ -58,19 +80,18 @@ function setup_relayer(express,
   // Initialize Express server
   const app = express();
   const PORT = 3000;
-  // Websocket providers
-  let providers = {}
   // Data per blockchain
   let data = {}
   // Initialize websocket providers
   blockChains.forEach((chain) => {
     providers[chain] = initializeWebSocket({chain, rpc:RPCProviders[0]})
+    walletClient[chain] = initializeWalletClient({chain, rpc:RPCProviders[0]})
     // Initialize data per blockchain
     data[chain] = {
       name: chain,
       incomingMsgs : [],
       finalityBlocks: [],
-      blockNumber : 1
+      blockNumber : 1,
     }
     listenForNewBlocks(providers[chain], newBlockHandlingFunction, data[chain])
   })
@@ -96,7 +117,7 @@ function setup_relayer(express,
         EVENT_SIGNATURES[event[1]], 
         JSON.parse(CONTRACT_ABIS[event[0]][chain]), 
         eventsHandlingFunctions[index],
-        data[chain])
+        data)
     })
   })
   // Optional: Add a health check endpoint
