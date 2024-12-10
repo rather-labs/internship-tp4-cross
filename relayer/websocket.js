@@ -49,7 +49,7 @@ const ENDPOINTS = {
 
 // Initialize the Viem WebSocket client 
 // Listens to event and gets block number
-function initializeWebSocket(opts){    
+function initializePublicClient(opts){    
   const { chain = 'eth', rpc='alchemy'} = opts;
   // Create client
   const client = createPublicClient({
@@ -79,8 +79,15 @@ function initializeWalletClient(opts){
   return (client)
 }
 
-async function callFunction(publicClient, walletClient, account, 
-        address, abi, functionName, args){    
+async function callFunction(
+  publicClient, 
+  walletClient, 
+  account, 
+  address, 
+  abi, 
+  functionName, 
+  args
+){    
   const { request } = await publicClient.simulateContract({
     address,
     abi,
@@ -147,9 +154,8 @@ function listenForNewBlocks(client, handleBlockNumber, data, opts={}) {
 });
 };
 
-
 module.exports = {
-    initializeWebSocket,
+    initializePublicClient,
     listenForNewBlocks,
     listenForContractEventsInBlock,
     listenForContractEvents,
