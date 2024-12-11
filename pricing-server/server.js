@@ -46,32 +46,6 @@ const PRICE_API_ENDPOINTS = {
   // Add more chains as needed
 };
 
-/**
- * Calculate gas per byte for a real transaction
- * @param {string} rpcUrl - The RPC URL of the blockchain
- * @param {string} toAddress - Contract address
- * @param {Array} abi - ABI of the contract
- * @param {string} functionName - Function name in the contract
- * @param {Array} args - Arguments for the function
- */
-const calculateGasPerByte = async (rpcUrl, toAddress, contractAddress, abi, functionName, args) => {
-    const gasEstimate = await estimateGasForRealTransaction(
-        rpcUrl,
-        toAddress,
-        contractAddress,
-        abi,
-        functionName,
-        args
-    );
-
-    // Encode the function call to get the size of the calldata
-    const iface = new ethers.Interface(abi); // Instantiate the Interface
-    const encodedData = iface.encodeFunctionData(functionName, args); 
-    
-    const dataSizeInBytes = ethers.getBytes(encodedData).length;
-
-    return gasEstimate / BigInt(dataSizeInBytes) ;
-};
 
 /**
  * Estimate gas for a real transaction
@@ -132,8 +106,9 @@ const gasToTokenFees = async (gasAmount, rpcUrl, chainId = 'ethereum') => {
     const decimals = CHAIN_DECIMALS[chainId] || 18; // default to 18 if chain not found
     
     // Calculate the fee in the chain's native denomination and adjust for decimals
-    const result = gasAmount * BigInt(gasPrice);
-    return result * BigInt(10 ** decimals) / BigInt(10 ** 18); // Adjust for different decimal places
+    const result = gasAmount * BigInt(gasPrice) * BigInt(10 ** decimals) / BigInt(10 ** 18); // Adjust for different decimal places
+
+    return { result, gasPrice };
 };
 
 /**
@@ -185,8 +160,8 @@ app.post("/estimateFees", async (req, res) => {
             return res.status(400).send({ error: "toAddress and functionName are required." });
         }
 
-        // Estimate gas per byte for the source and destination chains
-        const sourceGasPerByte = await calculateGasPerByte( 
+        // Estimate executiongas for the source and destination chains
+        const sourceExecutionGas = await estimateGasForRealTransaction(
             RPC_URL_SOURCE,
             toAddress,
             SOURCE_CONTRACT_ADDRESS,
@@ -194,7 +169,7 @@ app.post("/estimateFees", async (req, res) => {
             functionName,
             args
         );
-        const destinationGasPerByte = await calculateGasPerByte(
+        const destinationExecutionGas = await estimateGasForRealTransaction(
             RPC_URL_DESTINATION,
             toAddress,
             DESTINATION_CONTRACT_ADDRESS,
@@ -203,30 +178,21 @@ app.post("/estimateFees", async (req, res) => {
             args
         );
 
-        // Encode the function call to get the size of the calldata
-        const iface = new ethers.Interface(abi); // Instantiate the Interface
-        const encodedData = iface.encodeFunctionData(functionName, args); 
-        
-        const dataSizeInBytes = BigInt( ethers.getBytes(encodedData).length );
-
-        // Execution gas estimation
-        const sourceExecutionGas = sourceGasPerByte * dataSizeInBytes;
-        const destinationExecutionGas = destinationGasPerByte * dataSizeInBytes;
 
         // Include overhead and relayer fees
         const sourceGasWithOverheadAndFees = sourceExecutionGas * (OVERHEAD_PERCENTAGE + RELAYER_FEE_PERCENTAGE + BigInt(100)) / BigInt(100);
         const destinationGasWithOverheadAndFees = destinationExecutionGas * (OVERHEAD_PERCENTAGE + RELAYER_FEE_PERCENTAGE +BigInt(100)) / BigInt(100);
         
         //Calculate fees in native tokens
-        const sourceTokenFees = await gasToTokenFees(sourceGasWithOverheadAndFees, RPC_URL_SOURCE);
-        const destinationTokenFees = await gasToTokenFees(destinationGasWithOverheadAndFees, RPC_URL_DESTINATION, 'binance');
+        const {result: sourceTokenFees, gasPrice: sourceGasPrice} = await gasToTokenFees(sourceGasWithOverheadAndFees, RPC_URL_SOURCE);
+        const {result: destinationTokenFees, gasPrice: destinationGasPrice} = await gasToTokenFees(destinationGasWithOverheadAndFees, RPC_URL_DESTINATION, 'binance');
         
         //Calculate relayer fees in native tokens
         const sourceRelayerFee = sourceExecutionGas * RELAYER_FEE_PERCENTAGE / BigInt(100);
         const destinationRelayerFee = destinationExecutionGas * RELAYER_FEE_PERCENTAGE / BigInt(100);
 
-        const sourceRelayerFeeInToken = await gasToTokenFees(sourceRelayerFee, RPC_URL_SOURCE);
-        const destinationRelayerFeeInToken = await gasToTokenFees(destinationRelayerFee, RPC_URL_DESTINATION);
+        const {result: sourceRelayerFeeInToken} = await gasToTokenFees(sourceRelayerFee, RPC_URL_SOURCE);
+        const {result: destinationRelayerFeeInToken} = await gasToTokenFees(destinationRelayerFee, RPC_URL_DESTINATION);
 
         //Calculate total fee cost in usd
         const sourceFeeInUSD = await feeInTokenToUSD(sourceTokenFees, 'ethereum');
@@ -237,6 +203,8 @@ app.post("/estimateFees", async (req, res) => {
         res.json({
             sourceExecutionGas: sourceExecutionGas.toString(),
             destinationExecutionGas: destinationExecutionGas.toString(),
+            sourceGasPrice: sourceGasPrice.toString(),
+            destinationGasPrice: destinationGasPrice.toString(),
             sourceTokenFees: sourceTokenFees.toString(),
             destinationTokenFees: destinationTokenFees.toString(),
             sourceRelayerFeeInToken: sourceRelayerFeeInToken.toString(),
