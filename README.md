@@ -54,6 +54,14 @@ Generate transactionTrie, uses Transaction.serialization()
 npx ts-node .\mpt_transactions.ts
 ```
 
+### oreacle_server.js
+
+Initializes an oracle server that listen to events, new blocks and pushes blocknumber and receipt trie root for a number of chains.
+
+```bash
+node --env-file=.env .\oracle_server.js
+```
+
 ### relayer_server.js
 
 Initializes a relayer that listen to events, new blocks and past events on start up.
