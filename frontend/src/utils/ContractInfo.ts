@@ -1,3 +1,13 @@
+// Message information required by relayer per message emmited
+export type msgRelayer = {
+    blockNumber: number,
+    finalityBlock: number,
+    txIndex: number,
+    fee: number,
+    destinationBC: number,
+    number: number,
+    taxi: boolean
+}
 // Event Signatures per event - should be blockchain agnostic
 export const EVENT_SIGNATURES = {
     OutboundMessage:"event OutboundMessage(bytes,address,address,uint256,uint16,uint256,bool,uint256)",
