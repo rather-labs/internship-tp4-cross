@@ -43,7 +43,7 @@ export function WalletConnection({ getNetworkName }: WalletConnectionProps) {
           <button
             className="bg-[#037DD6] hover:bg-[#0260A4] px-6 py-3 rounded-xl transition-all transform hover:scale-105 shadow-lg text-white disabled:opacity-50 disabled:cursor-not-allowed"
             onClick={() => connect({ connector: metamaskConnector })}
-            disabled={account.status === "connected"}
+            disabled={account.isConnected}
           >
             Connect MetaMask
           </button>

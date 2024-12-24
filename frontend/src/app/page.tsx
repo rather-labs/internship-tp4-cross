@@ -8,6 +8,7 @@ import toast, { Toaster } from "react-hot-toast";
 import { WalletConnection } from "@/components/WalletConnection";
 import { Tooltip } from "@/components/Tooltip";
 import Oracle from "@/components/Oracle";
+import Relayer from "@/components/Relayer";
 
 function App() {
   const account = useAccount();
@@ -135,6 +136,7 @@ function App() {
           Cross-Chain RPS
         </h1>
         <Oracle />
+        <Relayer />
         <WalletConnection getNetworkName={getNetworkName} />
       </header>
 

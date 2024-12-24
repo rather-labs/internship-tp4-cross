@@ -1,22 +1,23 @@
-const { createMPT, verifyMerkleProof, createMerkleProof } = require('@ethereumjs/mpt') 
-const { bytesToHex, MapDB, hexToBytes, concatBytes, bigIntToBytes } = require('@ethereumjs/util')
-const rlp = require('@ethereumjs/rlp')
+import { createMPT, verifyMerkleProof, createMerkleProof } from '@ethereumjs/mpt'
+import { bytesToHex, MapDB, hexToBytes, concatBytes, bigIntToBytes } from '@ethereumjs/util'
+import { RLP } from '@ethereumjs/rlp'
 import { TransactionReceipt } from 'viem';
 
-const txTypes: Record<string, string> = {
+export const txTypes: Record<string, string> = {
    'eip4844': '0x03',
    'eip1559': '0x02',
    'eip2930': '0x01',
    'legacy': '0x00',
 }
 
-const txStatus = {
+export const txStatus = {
     'success': '0x01',
-    'failure': '0x'
+    'reverted': '0x00',
+    'failure': '0x00'
 }
 
 
-function serializeReceipt(receipt: TransactionReceipt) {
+export function serializeReceipt(receipt: TransactionReceipt) {
     const Data = [
         receipt.status === 'success' ? hexToBytes('0x01') : Uint8Array.from([]),
         bigIntToBytes(receipt.cumulativeGasUsed),
@@ -28,18 +29,18 @@ function serializeReceipt(receipt: TransactionReceipt) {
         ]),
     ]
     if (txTypes[receipt.type] !== '0x0'){
-        return concatBytes(hexToBytes(txTypes[receipt.type]), rlp.encode(Data))
+        return concatBytes(hexToBytes(txTypes[receipt.type]), RLP.encode(Data))
     }
-    return rlp.encode(Data)
+    return RLP.encode(Data)
 }
 
-async function getTrie(blockReceipts: TransactionReceipt[]) {
+export async function getTrie(blockReceipts: TransactionReceipt[]) {
     // Create merkle patricia trie
     const trie = await createMPT({ db:  new MapDB() });
    
     try {
         for (let i = 0; i < blockReceipts.length; i++) {
-            await trie.put(rlp.encode(i), serializeReceipt(blockReceipts[i]));
+            await trie.put(RLP.encode(i), serializeReceipt(blockReceipts[i]));
         }
         return trie;
     }
@@ -49,9 +50,9 @@ async function getTrie(blockReceipts: TransactionReceipt[]) {
 }
 
 
-async function getProof(trie: any, indexToVerify: any) {
+export async function getProof(trie: any, indexToVerify: any) {
     try {
-        const proof = await createMerkleProof(trie, rlp.encode(indexToVerify));
+        const proof = await createMerkleProof(trie, RLP.encode(indexToVerify));
         return proof
     }
     catch (error) {
@@ -59,22 +60,13 @@ async function getProof(trie: any, indexToVerify: any) {
     }
 }
 
-async function verifyProof(proof: any, indexToVerify: any) { 
+export async function verifyProof(proof: any, indexToVerify: any) { 
     try {
-        const verifiedValue = await verifyMerkleProof(rlp.encode(indexToVerify), proof);
+        const verifiedValue = await verifyMerkleProof(RLP.encode(indexToVerify), proof);
         // Get receipt proof from trie
         return verifiedValue
     }
     catch (error) {
         console.error('Error', error);
     }
-}
-
-module.exports = {
-    txTypes,
-    txStatus,
-    serializeReceipt,
-    getTrie,
-    getProof,
-    verifyProof
 }
