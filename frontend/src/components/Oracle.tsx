@@ -1,20 +1,20 @@
 "use client";
 import {
   useAccount,
-  useWriteContract,
   useBlockNumber,
   useConfig,
   useWatchContractEvent,
 } from "wagmi";
+import { writeContract } from "@wagmi/core";
 import {
   CONTRACT_ABIS,
   CONTRACT_ADDRESSES,
   CHAIN_NAMES,
   SUPPORTED_CHAINS,
 } from "../utils/ContractInfo"; //
-import React, { useEffect } from "react";
+import React, { useEffect, useState } from "react";
 import { Address } from "viem";
-import { getBlock } from "wagmi/actions";
+import { getBlock, waitForTransactionReceipt } from "wagmi/actions";
 import { useChainData } from "../contexts/ChainDataContext";
 
 type ChainAddresses = (typeof CONTRACT_ADDRESSES)["outgoing"];
@@ -24,21 +24,15 @@ export default function Oracle() {
 
   const { state: chainData, dispatch } = useChainData();
 
-  const {
-    writeContract: writeContractBlock,
-    error: errorWriteBlock,
-    isPending: isPendingWriteBlock,
-    isSuccess: isSuccessWriteBlock,
-  } = useWriteContract();
-
-  const {
-    writeContract: writeContractInReceipt,
-    error: errorWriteInReceipt,
-    isPending: isPendingWriteInReceipt,
-    isSuccess: isSuccessWriteInReceipt,
-  } = useWriteContract();
-
   let config = useConfig();
+
+  const [errorWriteBlock, setErrorWriteBlock] = useState("");
+  const [isPendingWriteBlock, setPendingWriteBlock] = useState(false);
+  const [isSuccessWriteBlock, setSuccessWriteBlock] = useState(false);
+
+  const [errorWriteInReceipt, setErrorWriteInReceipt] = useState("");
+  const [isPendingWriteInReceipt, setPendingWriteInReceipt] = useState(false);
+  const [isSuccessWriteInReceipt, setSuccessWriteInReceipt] = useState(false);
 
   const { data: blockNumber } = useBlockNumber({
     watch: true,
@@ -60,10 +54,11 @@ export default function Oracle() {
   ] as Address;
 
   useEffect(() => {
+    if (blockNumber === undefined || chainId === undefined) return;
     dispatch({
       type: "UPDATE_BLOCK_NUMBER",
-      chainId: chainId ?? 0,
-      blockNumber: Number(blockNumber ?? 0),
+      chainId: chainId,
+      blockNumber: Number(blockNumber),
     });
     console.log("Oracle: blockNumber", blockNumber);
     console.log(chainData);
@@ -73,16 +68,25 @@ export default function Oracle() {
     console.log("Oracle: handleInboundBlockNumbers");
     for (const chain of SUPPORTED_CHAINS) {
       if (chain === chainId || chainData[chain] === undefined) continue;
+      setErrorWriteBlock("");
+      setPendingWriteBlock(true);
+      setSuccessWriteBlock(false);
       try {
-        writeContractBlock({
+        const txHash = await writeContract(config, {
           address: verificationAddress,
           abi: JSON.parse(CONTRACT_ABIS["verification"]),
           functionName: "setLastBlock",
           args: [chain, chainData[chain].blockNumber],
         });
-      } catch (error) {
+        await waitForTransactionReceipt(config, {
+          hash: txHash,
+        });
+        setSuccessWriteBlock(true);
+      } catch (error: any) {
         console.error("Error setting blocknumber:", error);
+        setErrorWriteBlock(error.message);
       }
+      setPendingWriteBlock(false);
     }
   };
 
@@ -95,22 +99,32 @@ export default function Oracle() {
     )
       return;
     for (const receipt of chainData[chainId].receiptTrieRoots) {
+      setErrorWriteInReceipt("");
+      setPendingWriteInReceipt(true);
+      setSuccessWriteInReceipt(false);
       try {
-        writeContractInReceipt({
+        const txHash = await writeContract(config, {
           address: verificationAddress,
           abi: JSON.parse(CONTRACT_ABIS["verification"]),
           functionName: "setRecTrieRoot",
-          args: [chainId, ...receipt],
+          args: receipt,
+        });
+        await waitForTransactionReceipt(config, {
+          hash: txHash,
         });
         // Remove the inbount root
         dispatch({
           type: "REMOVE_RECEIPT_TRIE_ROOT",
           chainId,
-          blockNumber: receipt[0],
+          sourceId: receipt[0],
+          blockNumber: receipt[1],
         });
-      } catch (error) {
+        setSuccessWriteInReceipt(true);
+      } catch (error: any) {
         console.error("Error setting receipt trie root:", error);
+        setErrorWriteInReceipt(error.message);
       }
+      setPendingWriteInReceipt(false);
     }
   };
 
@@ -120,24 +134,12 @@ export default function Oracle() {
     const Block = await getBlock(config, {
       blockNumber: log.blockNumber,
     });
+    if (chainId === undefined) return;
     dispatch({
       type: "ADD_RECEIPT_TRIE_ROOT",
       chainId: log.args.destinationBC,
-      blockNumber: log.blockNumber,
-      root: Block.receiptsRoot,
-    });
-  };
-
-  const handleMsgDelivered = async (log: any) => {
-    console.log("Oracle: handleMsgDelivered");
-    // Store receipt trie root in local storage
-    const Block = await getBlock(config, {
-      blockNumber: log.blockNumber,
-    });
-    dispatch({
-      type: "ADD_RECEIPT_TRIE_ROOT",
-      chainId: chainId ?? 0,
-      blockNumber: log.blockNumber,
+      sourceId: chainId,
+      blockNumber: Number(log.blockNumber),
       root: Block.receiptsRoot,
     });
   };
@@ -153,16 +155,28 @@ export default function Oracle() {
     },
   });
 
-  //check if useWatchContractEvent requires third party rpc's can't be used for tutorial implementation
-  useWatchContractEvent({
-    address: incomingAddress,
-    abi: JSON.parse(CONTRACT_ABIS["incoming"]),
-    eventName: "InboundMessagesRes",
-    pollingInterval: 10_000,
-    onLogs(logs: any) {
-      handleMsgDelivered(logs[0]);
-    },
-  });
+  // As there's no payment to relayer, this is not needed
+  //const handleMsgDelivered = async (log: any) => {
+  //  console.log("Oracle: handleMsgDelivered");
+  //  const Block = await getBlock(config, {
+  //    blockNumber: log.blockNumber,
+  //  });
+  //  dispatch({
+  //    type: "ADD_RECEIPT_TRIE_ROOT",
+  //    chainId: chainId ?? 0,
+  //    blockNumber: log.blockNumber,
+  //    root: Block.receiptsRoot,
+  //  });
+  //};
+  //useWatchContractEvent({
+  //  address: incomingAddress,
+  //  abi: JSON.parse(CONTRACT_ABIS["incoming"]),
+  //  eventName: "InboundMessagesRes",
+  //  pollingInterval: 10_000,
+  //  onLogs(logs: any) {
+  //    handleMsgDelivered(logs[0]);
+  //  },
+  //});
 
   // Only watch for events if we have a valid chainId
   if (!isConnected || !chainId) {
@@ -188,7 +202,7 @@ export default function Oracle() {
           </button>
           {errorWriteBlock && (
             <div className="p-4 bg-red-100 border border-red-400 text-red-700 rounded">
-              Error: {errorWriteBlock.message}
+              Error: {errorWriteBlock}
             </div>
           )}
           {isSuccessWriteBlock && (
@@ -214,7 +228,7 @@ export default function Oracle() {
           </button>
           {errorWriteInReceipt && (
             <div className="p-4 bg-red-100 border border-red-400 text-red-700 rounded">
-              Error: {errorWriteInReceipt.message}
+              Error: {errorWriteInReceipt}
             </div>
           )}
           {isSuccessWriteInReceipt && (

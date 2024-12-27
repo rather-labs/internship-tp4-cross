@@ -1,4 +1,14 @@
+import { Hex } from "viem"
+
 // Message information required by relayer per message emmited
+export type msgReceipt = {
+        status: Hex,
+        cumulativeGasUsed: Hex,
+        logsBloom: Hex,
+        logs: [Hex, Hex[], Hex][],
+        txType: Hex,
+        rlpEncTxIndex: Hex,
+}
 export type msgRelayer = {
     blockNumber: number,
     finalityBlock: number,
@@ -6,7 +16,9 @@ export type msgRelayer = {
     fee: number,
     destinationBC: number,
     number: number,
-    taxi: boolean
+    taxi: boolean,
+    receipt: msgReceipt,
+    proof: Hex[],
 }
 // Event Signatures per event - should be blockchain agnostic
 export const EVENT_SIGNATURES = {
@@ -21,6 +33,7 @@ export const CONTRACT_ABIS = {
 }
 
 export const SUPPORTED_CHAINS = [31337,31338]
+export type SUPPORTED_CHAINS_TYPE = 31337 |31338
 
 export const CHAIN_NAMES = {
     [31337]: "localhost_1",

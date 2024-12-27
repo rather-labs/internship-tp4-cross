@@ -10,7 +10,7 @@ import {
 
 interface ChainData {
   outgoingMsgs: msgRelayer[];
-  receiptTrieRoots: [number, string][];
+  receiptTrieRoots: [number, number, string][];
   blockNumber: number;
 }
 
@@ -50,12 +50,14 @@ type Action =
   | {
       type: "ADD_RECEIPT_TRIE_ROOT";
       chainId: number;
+      sourceId: number;
       blockNumber: number;
       root: string;
     }
   | {
       type: "REMOVE_RECEIPT_TRIE_ROOT";
       chainId: number;
+      sourceId: number;
       blockNumber: number;
     };
 
@@ -129,7 +131,7 @@ function chainDataReducer(
           ...state[action.chainId],
           receiptTrieRoots: [
             ...(state[action.chainId]?.receiptTrieRoots || []),
-            [action.blockNumber, action.root],
+            [action.sourceId, action.blockNumber, action.root],
           ],
         },
       };
@@ -141,7 +143,8 @@ function chainDataReducer(
           ...state[action.chainId],
           receiptTrieRoots:
             state[action.chainId]?.receiptTrieRoots.filter(
-              ([blockNum]) => blockNum !== action.blockNumber
+              ([sourceId, blockNum]) =>
+                sourceId !== action.sourceId || blockNum !== action.blockNumber
             ) || [],
         },
       };
