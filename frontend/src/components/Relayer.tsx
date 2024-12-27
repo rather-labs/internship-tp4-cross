@@ -1,3 +1,4 @@
+"use client";
 import {
   useAccount,
   useWriteContract,
@@ -11,7 +12,7 @@ import {
   SUPPORTED_CHAINS,
   msgRelayer,
 } from "../utils/ContractInfo"; //
-import React from "react";
+import React, { useState } from "react";
 import { Address, TransactionReceipt, toHex } from "viem";
 import { getBlock, getTransactionReceipt } from "wagmi/actions";
 import { useChainData } from "../contexts/ChainDataContext";
@@ -37,6 +38,8 @@ export default function Relayer() {
   const { address: walletAddress, isConnected, chainId } = useAccount();
 
   const { state: chainData, dispatch } = useChainData();
+
+  const [inboundingMsgs, setInboundingMsgs] = useState(false);
 
   const {
     writeContract,
@@ -124,6 +127,7 @@ export default function Relayer() {
 
   const handleInboundMsgs = async () => {
     console.log("Relayer: handleInboundMsgs");
+    setInboundingMsgs(true);
     for (const chain of SUPPORTED_CHAINS) {
       if (
         chainId === undefined ||
@@ -157,12 +161,13 @@ export default function Relayer() {
             BigInt(chain),
             blockNumbers,
           ],
-          gas: 30000000n, // Explicit gas limit
-          ...GAS_CONFIG, // Add gas price configuration
+          //gas: 30000000n, // Explicit gas limit
+          //...GAS_CONFIG, // Add gas price configuration
         });
       } catch (error) {
         console.error("Error Inbounding messages:", error);
       }
+      setInboundingMsgs(false);
     }
   };
 
@@ -218,7 +223,7 @@ export default function Relayer() {
     address: incomingAddress,
     abi: JSON.parse(CONTRACT_ABIS["incoming"]),
     eventName: "InboundMessagesRes",
-    pollingInterval: 20_000,
+    pollingInterval: 10_000,
     onLogs(logs: any) {
       console.log("Received InboundMessagesRes logs:", logs);
       handleMsgDelivered(logs[0]);
@@ -230,7 +235,7 @@ export default function Relayer() {
     address: outgoingAddress,
     abi: JSON.parse(CONTRACT_ABIS["outgoing"]),
     eventName: "OutboundMessage",
-    pollingInterval: 20_000,
+    pollingInterval: 10_000,
     onLogs(logs: any) {
       handleEmitMsg(logs[0]);
     },
@@ -247,7 +252,7 @@ export default function Relayer() {
         <button
           className="bg-[#037DD6] hover:bg-[#0260A4] px-8 py-4 rounded-xl text-xl font-bold transition-all transform hover:scale-105 shadow-lg"
           onClick={() => handleInboundMsgs()}
-          disabled={isPendingWriteContract}
+          disabled={isPendingWriteContract || inboundingMsgs}
         >
           {isPendingWriteContract ? (
             <div className="flex items-center justify-center">

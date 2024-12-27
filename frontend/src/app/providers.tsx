@@ -7,18 +7,23 @@ import { type State, WagmiProvider } from "wagmi";
 import { ChainDataProvider } from "../contexts/ChainDataContext";
 
 import { getConfig } from "@/wagmi";
+import { cookieToInitialState } from "wagmi";
 
-export function Providers(props: {
-  children: ReactNode;
-  initialState?: State;
-}) {
-  const [config] = useState(() => getConfig());
+export function Providers({ children }: { children: ReactNode }) {
+  const [config] = useState(() => {
+    if (typeof window === "undefined") return null; // Return null during SSR
+    return getConfig();
+  });
+
+  const initialState = cookieToInitialState(getConfig(), document.cookie);
   const [queryClient] = useState(() => new QueryClient());
 
+  if (!config) return null; // Don't render anything during SSR
+
   return (
-    <WagmiProvider config={config} initialState={props.initialState}>
+    <WagmiProvider config={config} initialState={initialState}>
       <QueryClientProvider client={queryClient}>
-        <ChainDataProvider>{props.children}</ChainDataProvider>
+        <ChainDataProvider>{children}</ChainDataProvider>
       </QueryClientProvider>
     </WagmiProvider>
   );

@@ -1,3 +1,4 @@
+"use client";
 import {
   useAccount,
   useWriteContract,
@@ -146,7 +147,7 @@ export default function Oracle() {
     address: outgoingAddress,
     abi: JSON.parse(CONTRACT_ABIS["outgoing"]),
     eventName: "OutboundMessage",
-    pollingInterval: 20_000,
+    pollingInterval: 10_000,
     onLogs(logs: any) {
       handleEmitMsg(logs[0]);
     },
@@ -157,7 +158,7 @@ export default function Oracle() {
     address: incomingAddress,
     abi: JSON.parse(CONTRACT_ABIS["incoming"]),
     eventName: "InboundMessagesRes",
-    pollingInterval: 20_000,
+    pollingInterval: 10_000,
     onLogs(logs: any) {
       handleMsgDelivered(logs[0]);
     },
