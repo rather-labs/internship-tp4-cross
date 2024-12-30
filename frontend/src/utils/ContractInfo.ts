@@ -49,3 +49,8 @@ export const CONTRACT_INITIAL_BLOCKS = {
     localhost_1: 21322558,
     localhost_2: 44551692,
 }
+
+export const COMMUNICATION_CONTRACT_ADDRESS = '0x...' // Your contract address
+export const COMMUNICATION_CONTRACT_ABI = [...] // Your contract ABI
+export const DESTINATION_CHAIN_ID = 1 // The chain ID you're sending to
+export const DESTINATION_CONTRACT = '0x...' // The contract address on the destination chain

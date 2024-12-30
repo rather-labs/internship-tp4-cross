@@ -45,7 +45,7 @@ export function WalletConnection({ getNetworkName }: WalletConnectionProps) {
             onClick={() => connect({ connector: metamaskConnector })}
             disabled={account.status === "connected"}
           >
-            Connect MetaMask
+            Please Connect Wallet
           </button>
         )
       )}

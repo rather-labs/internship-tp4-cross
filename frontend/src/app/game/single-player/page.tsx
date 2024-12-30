@@ -1,12 +1,19 @@
 "use client";
 
-import { useAccount, useDisconnect } from "wagmi";
+import { useAccount, useDisconnect, useWriteContract } from "wagmi";
 import { useState, useEffect } from "react";
 import Image from "next/image";
 import { useRouter } from "next/navigation";
 import toast, { Toaster } from "react-hot-toast";
 import { WalletConnection } from "@/components/WalletConnection";
 import { Tooltip } from "@/components/Tooltip";
+import { OracleButton } from "@/components/OracleButton";
+import { CallOracle } from "@/components/CallOracle";
+import { Transition } from "@/components/Transition";
+import { Game } from "@/components/Game";
+import { Header } from "@/components/Header";
+import { GameProvider } from '@/context/GameContext'
+import { useGame } from '@/context/GameContext'
 
 function SinglePlayerGame() {
   const router = useRouter();
@@ -18,6 +25,14 @@ function SinglePlayerGame() {
   >("WAITING");
   const [lastMove, setLastMove] = useState<string | null>(null);
   const chainId = account.chainId;
+  const { isOracleCalled } = useGame();
+
+  const {
+    writeContract: writeGameMove,
+    error: errorGameMove,
+    isPending: isPendingGameMove,
+    isSuccess: isSuccessGameMove,
+  } = useWriteContract();
 
   // Redirect if not connected
   useEffect(() => {
@@ -26,6 +41,7 @@ function SinglePlayerGame() {
     }
   }, [account.status, router]);
 
+  // Check if the network is supported
   useEffect(() => {
     if (chainId) {
       const network = getAllowedNetworks().find((net) => net.id === chainId);
@@ -48,10 +64,36 @@ function SinglePlayerGame() {
     }
   }, [chainId, disconnect, router]);
 
-  const handleMove = (choice: string) => {
-    setLastMove(choice);
-    setGameState("TRANSITION");
-    //TODO: callCommunicationContract()
+  const handleMove = async (choice: string) => {
+    try {
+      await writeGameMove({
+        address: COMMUNICATION_CONTRACT_ADDRESS as `0x${string}`,
+        abi: COMMUNICATION_CONTRACT_ABI,
+        functionName: 'sendMessage',
+        args: [
+          choice,                    // player's move
+          currentPlayer,            // current player number
+          DESTINATION_CHAIN_ID,     // destination chain ID
+          DESTINATION_CONTRACT      // destination contract address
+        ],
+      });
+
+      if (isSuccessGameMove) {
+        setLastMove(choice);
+        setGameState("TRANSITION");
+      }
+    } catch (error) {
+      toast.error('Failed to submit move. Please try again.', {
+        duration: 5000,
+        position: 'top-center',
+        style: {
+          background: '#FEE2E2',
+          color: '#991B1B',
+          border: '1px solid #F87171',
+        },
+      });
+      console.error("Error submitting move:", error);
+    }
   };
 
   const handleNextTurn = () => {
@@ -77,65 +119,27 @@ function SinglePlayerGame() {
 
   const renderGameContent = () => {
     if (gameState === "TRANSITION") {
-      return (
-        <div className="space-y-8">
-          <h2 className="text-3xl font-bold mb-8">
-            Player {currentPlayer} chose their move! The move has been sent to
-            the cross-chain protocol.
-          </h2>
-          <div className="bg-[#037DD6] text-white p-6 rounded-xl mb-8">
-            <p className="text-xl mb-4">
-              Now it's Player {currentPlayer === 1 ? 2 : 1}'s turn
-            </p>
-            <p className="text-sm text-gray-200">
-              The previous move has been securely stored
-            </p>
-          </div>
-          <button
-            className="bg-[#F6851B] hover:bg-[#E2761B] px-8 py-4 rounded-xl text-xl font-bold transition-all transform hover:scale-105 shadow-lg text-white"
-            onClick={handleNextTurn}
-          >
-            Start Player {currentPlayer === 1 ? 2 : 1}'s Turn
-          </button>
-        </div>
-      );
+      if (!isOracleCalled) {
+        return <CallOracle />
+      }
+      return <Transition handleNextTurn={handleNextTurn} currentPlayer={currentPlayer}/>
     }
 
     return (
       <>
-        <h2 className="text-3xl font-bold mb-8">
-          Make Your Choice, Player {currentPlayer}
-        </h2>
-
-        <div className="grid grid-cols-3 gap-8 mb-8">
-          {["Rock", "Paper", "Scissors"].map((choice) => (
-            <button
-              key={choice}
-              className="bg-[#F6851B] hover:bg-[#E2761B] p-8 rounded-xl text-2xl font-bold transition-all transform hover:scale-105 shadow-lg text-white"
-              onClick={() => handleMove(choice)}
-            >
-              {choice === "Rock" ? "💎" : choice === "Paper" ? "📄" : "✂️"}
-              <div className="mt-4">{choice}</div>
-            </button>
-          ))}
-        </div>
-
-        <div className="flex items-center gap-2">
-          <p className="text-[#6A737D] text-lg">
-            Once you select your move, you will be prompted to sign a
-            transaction with your wallet. Then, your move will be sent
-            cross-chain to the other player.
-          </p>
-          <Tooltip
-            content="We use a secure cross-chain communication protocol to safely transmit your move between different blockchains while maintaining game integrity."
-            link={{
-              href: "https://docs.axelar.dev/",
-              text: "Learn More",
-            }}
-          />
-        </div>
+        <Game currentPlayer={currentPlayer} handleMove={handleMove}/>
+        {errorGameMove && (
+          <div className="mt-4 p-4 bg-red-100 border border-red-400 text-red-700 rounded">
+            Error: {errorGameMove.message}
+          </div>
+        )}
+        {isPendingGameMove && (
+          <div className="mt-4 p-4 bg-blue-100 border border-blue-400 text-blue-700 rounded">
+            Submitting move to blockchain...
+          </div>
+        )}
       </>
-    );
+    )
   };
 
   try {
@@ -143,17 +147,7 @@ function SinglePlayerGame() {
       <div className="min-h-screen bg-[#FFFFFF] text-[#24272A]">
         <Toaster />
         {/* Header */}
-        <header className="p-6 flex justify-between items-center bg-white shadow-md">
-          <h1 className="text-2xl font-bold text-[#24272A] flex items-center gap-2">
-            <img
-              src="/rps-icon.webp"
-              alt="RPS Game Icon"
-              className="w-14 h-14"
-            />
-            Cross-Chain RPS
-          </h1>
-          <WalletConnection getNetworkName={getNetworkName} />
-        </header>
+        <Header getNetworkName={getNetworkName} />
 
         {/* Game Area */}
         <main className="container mx-auto px-4 py-16 text-center">
@@ -182,4 +176,10 @@ function SinglePlayerGame() {
   }
 }
 
-export default SinglePlayerGame;
+export default function SinglePlayerGameWithProvider() {
+  return (
+    <GameProvider>
+      <SinglePlayerGame />
+    </GameProvider>
+  );
+}

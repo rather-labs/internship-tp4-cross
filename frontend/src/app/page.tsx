@@ -7,7 +7,7 @@ import { useRouter } from "next/navigation";
 import toast, { Toaster } from "react-hot-toast";
 import { WalletConnection } from "@/components/WalletConnection";
 import { Tooltip } from "@/components/Tooltip";
-import Oracle from "@/components/Oracle";
+import { Header } from "@/components/Header";
 
 function App() {
   const account = useAccount();
@@ -63,17 +63,24 @@ function App() {
         <div className="space-y-6">
           <div className="flex gap-8 justify-center">
             <button
-              className="bg-[#037DD6] hover:bg-[#0260A4] px-8 py-4 rounded-xl text-xl font-bold transition-all transform hover:scale-105 shadow-lg"
+              className="bg-[#037DD6] hover:bg-[#0260A4] text-white px-8 py-4 rounded-xl text-xl font-bold transition-all transform hover:scale-105 shadow-lg"
               onClick={() => setPlayerCount(1)}
             >
               Single Player
             </button>
-            <button
-              className="bg-[#037DD6] hover:bg-[#0260A4] px-8 py-4 rounded-xl text-xl font-bold transition-all transform hover:scale-105 shadow-lg"
-              onClick={() => setPlayerCount(2)}
-            >
-              Two Players
-            </button>
+
+            <div className="relative group">
+              <button
+                className="bg-[#BBC0C5] px-8 py-4 rounded-xl text-xl font-bold cursor-not-allowed opacity-75"
+                onClick={() => setPlayerCount(2)}
+                disabled={true}
+              >
+                Two Players
+              </button>
+              <div className="absolute top-1/2 left-full transform -translate-y-1/2 ml-2 px-3 py-2 bg-gray-900 text-white text-sm rounded-lg opacity-0 group-hover:opacity-100 transition-opacity whitespace-nowrap">
+                Two-Player versus mode <br /> coming soon!
+              </div>
+            </div>
           </div>
           <p className="text-[#BBC0C5]">Please select game mode</p>
         </div>
@@ -85,7 +92,7 @@ function App() {
         {playerCount === 1 ? (
           <div className="ml-6 flex items-center justify-center gap-2">
             <button
-              className="bg-[#F6851B] hover:bg-[#E2761B] px-8 py-4 rounded-xl text-xl font-bold transition-all transform hover:scale-105 shadow-lg"
+              className="bg-[#037DD6] hover:bg-[#0260A4] text-white px-8 py-4 rounded-xl text-xl font-bold transition-all transform hover:scale-105 shadow-lg"
               onClick={() => router.push("/game/single-player")}
             >
               Start Single Player Game
@@ -129,14 +136,7 @@ function App() {
     <div className="min-h-screen bg-[#FFFFFF] text-[#24272A]">
       <Toaster />
       {/* Header */}
-      <header className="p-6 flex justify-between items-center bg-white shadow-md">
-        <h1 className="text-2xl font-bold text-[#24272A] flex items-center gap-2">
-          <img src="/rps-icon.webp" alt="RPS Game Icon" className="w-14 h-14" />
-          Cross-Chain RPS
-        </h1>
-        <Oracle />
-        <WalletConnection getNetworkName={getNetworkName} />
-      </header>
+      <Header getNetworkName={getNetworkName} />
 
       {/* Hero Section */}
       <main className="container mx-auto px-4 py-16 text-center">
