@@ -19,9 +19,6 @@ const nextConfig = {
       path: false,
     };
     return config;
-  },
-  experimental: {
-    appDir: true,
   }
 }
 
