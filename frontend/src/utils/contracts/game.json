@@ -1,0 +1,314 @@
+[
+    {
+      "inputs": [
+        {
+          "internalType": "address",
+          "name": "_communicationContract",
+          "type": "address"
+        },
+        {
+          "internalType": "uint256",
+          "name": "_chainID",
+          "type": "uint256"
+        }
+      ],
+      "stateMutability": "nonpayable",
+      "type": "constructor"
+    },
+    {
+      "anonymous": false,
+      "inputs": [
+        {
+          "components": [
+            {
+              "internalType": "uint256",
+              "name": "rivalChainID",
+              "type": "uint256"
+            },
+            {
+              "internalType": "uint256",
+              "name": "gameNumber",
+              "type": "uint256"
+            }
+          ],
+          "indexed": false,
+          "internalType": "struct RockPaperScissorsGame.GameId",
+          "name": "gameId",
+          "type": "tuple"
+        },
+        {
+          "indexed": false,
+          "internalType": "address",
+          "name": "player1",
+          "type": "address"
+        },
+        {
+          "indexed": false,
+          "internalType": "address",
+          "name": "player2",
+          "type": "address"
+        }
+      ],
+      "name": "GameCreated",
+      "type": "event"
+    },
+    {
+      "anonymous": false,
+      "inputs": [
+        {
+          "components": [
+            {
+              "internalType": "address",
+              "name": "player1",
+              "type": "address"
+            },
+            {
+              "internalType": "address",
+              "name": "player2",
+              "type": "address"
+            },
+            {
+              "internalType": "enum RockPaperScissorsGame.Move",
+              "name": "player1Move",
+              "type": "uint8"
+            },
+            {
+              "internalType": "enum RockPaperScissorsGame.Move",
+              "name": "player2Move",
+              "type": "uint8"
+            },
+            {
+              "internalType": "enum RockPaperScissorsGame.Result",
+              "name": "result",
+              "type": "uint8"
+            }
+          ],
+          "indexed": false,
+          "internalType": "struct RockPaperScissorsGame.Game",
+          "name": "finishedGame",
+          "type": "tuple"
+        }
+      ],
+      "name": "GameResult",
+      "type": "event"
+    },
+    {
+      "anonymous": false,
+      "inputs": [
+        {
+          "components": [
+            {
+              "internalType": "uint256",
+              "name": "rivalChainID",
+              "type": "uint256"
+            },
+            {
+              "internalType": "uint256",
+              "name": "gameNumber",
+              "type": "uint256"
+            }
+          ],
+          "indexed": false,
+          "internalType": "struct RockPaperScissorsGame.GameId",
+          "name": "gameId",
+          "type": "tuple"
+        },
+        {
+          "indexed": false,
+          "internalType": "address",
+          "name": "player",
+          "type": "address"
+        },
+        {
+          "indexed": false,
+          "internalType": "enum RockPaperScissorsGame.Move",
+          "name": "move",
+          "type": "uint8"
+        }
+      ],
+      "name": "MoveMade",
+      "type": "event"
+    },
+    {
+      "inputs": [],
+      "name": "chainID",
+      "outputs": [
+        {
+          "internalType": "uint256",
+          "name": "",
+          "type": "uint256"
+        }
+      ],
+      "stateMutability": "view",
+      "type": "function"
+    },
+    {
+      "inputs": [],
+      "name": "communicationContract",
+      "outputs": [
+        {
+          "internalType": "address",
+          "name": "",
+          "type": "address"
+        }
+      ],
+      "stateMutability": "view",
+      "type": "function"
+    },
+    {
+      "inputs": [
+        {
+          "internalType": "uint256",
+          "name": "",
+          "type": "uint256"
+        }
+      ],
+      "name": "gameCounter",
+      "outputs": [
+        {
+          "internalType": "uint256",
+          "name": "",
+          "type": "uint256"
+        }
+      ],
+      "stateMutability": "view",
+      "type": "function"
+    },
+    {
+      "inputs": [
+        {
+          "internalType": "uint256",
+          "name": "",
+          "type": "uint256"
+        },
+        {
+          "internalType": "uint256",
+          "name": "",
+          "type": "uint256"
+        }
+      ],
+      "name": "games",
+      "outputs": [
+        {
+          "internalType": "address",
+          "name": "player1",
+          "type": "address"
+        },
+        {
+          "internalType": "address",
+          "name": "player2",
+          "type": "address"
+        },
+        {
+          "internalType": "enum RockPaperScissorsGame.Move",
+          "name": "player1Move",
+          "type": "uint8"
+        },
+        {
+          "internalType": "enum RockPaperScissorsGame.Move",
+          "name": "player2Move",
+          "type": "uint8"
+        },
+        {
+          "internalType": "enum RockPaperScissorsGame.Result",
+          "name": "result",
+          "type": "uint8"
+        }
+      ],
+      "stateMutability": "view",
+      "type": "function"
+    },
+    {
+      "inputs": [
+        {
+          "internalType": "bytes",
+          "name": "data",
+          "type": "bytes"
+        }
+      ],
+      "name": "receiveMove",
+      "outputs": [],
+      "stateMutability": "nonpayable",
+      "type": "function"
+    },
+    {
+      "inputs": [
+        {
+          "components": [
+            {
+              "internalType": "uint256",
+              "name": "rivalChainID",
+              "type": "uint256"
+            },
+            {
+              "internalType": "uint256",
+              "name": "gameNumber",
+              "type": "uint256"
+            }
+          ],
+          "internalType": "struct RockPaperScissorsGame.GameId",
+          "name": "gameId",
+          "type": "tuple"
+        },
+        {
+          "internalType": "address",
+          "name": "player1",
+          "type": "address"
+        },
+        {
+          "internalType": "address",
+          "name": "player2",
+          "type": "address"
+        },
+        {
+          "internalType": "enum RockPaperScissorsGame.Move",
+          "name": "move",
+          "type": "uint8"
+        }
+      ],
+      "name": "startGame",
+      "outputs": [],
+      "stateMutability": "nonpayable",
+      "type": "function"
+    },
+    {
+      "inputs": [
+        {
+          "components": [
+            {
+              "internalType": "uint256",
+              "name": "rivalChainID",
+              "type": "uint256"
+            },
+            {
+              "internalType": "uint256",
+              "name": "gameNumber",
+              "type": "uint256"
+            }
+          ],
+          "internalType": "struct RockPaperScissorsGame.GameId",
+          "name": "gameId",
+          "type": "tuple"
+        },
+        {
+          "internalType": "address",
+          "name": "player1",
+          "type": "address"
+        },
+        {
+          "internalType": "address",
+          "name": "player2",
+          "type": "address"
+        },
+        {
+          "internalType": "enum RockPaperScissorsGame.Move",
+          "name": "move",
+          "type": "uint8"
+        }
+      ],
+      "name": "submitMove",
+      "outputs": [],
+      "stateMutability": "nonpayable",
+      "type": "function"
+    }
+]
