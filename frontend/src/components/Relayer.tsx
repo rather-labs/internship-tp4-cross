@@ -105,16 +105,17 @@ export default function Relayer() {
       );
       return [undefined, undefined];
     }
+
     return [
       {
         status: txStatus[receipt.status],
-        cumulativeGasUsed: toHex(receipt.cumulativeGasUsed),
+        cumulativeGasUsed: receipt.cumulativeGasUsed,
         logsBloom: receipt.logsBloom,
         logs: Logs,
         txType: txTypes[receipt.type],
         rlpEncTxIndex: toHex(rlp.encode(message.txIndex)),
       } as msgReceipt,
-      proof.map((value: any) => toHex(value)) as Hex[],
+      proof.map((value: any) => toHex(value)),
     ];
   }
 
@@ -144,7 +145,7 @@ export default function Relayer() {
             acc[2].push(msg.blockNumber);
           return acc;
         },
-        [[], [], []] as [msgReceipt[], string[][], number[]]
+        [[], [], []] as [msgReceipt[], Hex[][], number[]]
       );
       console.log("receipts", receipts);
       console.log("blockNumbers", blockNumbers);
@@ -221,15 +222,16 @@ export default function Relayer() {
 
   const handleMsgDelivered = async (log: any) => {
     console.log("Relayer: handleMsgDelivered");
-    console.log("log", log);
     // Remove delivered messages from chainData
     for (const [index, msgNumber] of log.args.inboundMessageNumbers.entries()) {
-      if (log.args.successfullInbound[index]) {
-        console.log("Removing message:", msgNumber);
+      if (
+        log.args.successfullInbound[index] ||
+        log.args.failureReasons[index] === "Inbound: Message already delivered"
+      ) {
         dispatch({
           type: "REMOVE_MESSAGE",
-          chainId: log.args.sourceBC,
-          messageNumber: msgNumber,
+          chainId: Number(log.args.sourceBC),
+          messageNumber: Number(msgNumber),
           destinationBC: chainId ?? 0,
         });
       }

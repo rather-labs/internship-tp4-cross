@@ -109,8 +109,10 @@ function chainDataReducer(
           outgoingMsgs:
             state[action.chainId]?.outgoingMsgs.filter(
               (msg) =>
-                msg.number !== action.messageNumber ||
-                msg.destinationBC !== action.destinationBC
+                !(
+                  msg.number === action.messageNumber &&
+                  msg.destinationBC === action.destinationBC
+                )
             ) || [],
         },
       };
