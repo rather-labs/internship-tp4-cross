@@ -12,8 +12,17 @@ import { CallOracle } from "@/components/CallOracle";
 import { Transition } from "@/components/Transition";
 import { Game } from "@/components/Game";
 import { Header } from "@/components/Header";
-import { GameProvider } from '@/context/GameContext'
-import { useGame } from '@/context/GameContext'
+import { GameProvider } from '@/context/GameContext';
+import { useGame } from '@/context/GameContext';
+import { CONTRACT_ADDRESSES, CHAIN_IDS } from "@/utils/ContractInfo";
+import gameAbiJson from '../../../utils/contracts/game.json';
+import { moveCursor } from "readline";
+
+const moveToNumber: { [key: string]: number } = {
+  'Rock': 1,
+  'Paper': 2,
+  'Scissors': 3
+};
 
 function SinglePlayerGame() {
   const router = useRouter();
@@ -25,7 +34,7 @@ function SinglePlayerGame() {
   >("WAITING");
   const [lastMove, setLastMove] = useState<string | null>(null);
   const chainId = account.chainId;
-  const { isOracleCalled } = useGame();
+  const { isOracleCalled, setCurrentChoice, currentChoice } = useGame();
 
   const {
     writeContract: writeGameMove,
@@ -64,24 +73,30 @@ function SinglePlayerGame() {
     }
   }, [chainId, disconnect, router]);
 
-  const handleMove = async (choice: string) => {
+  const handleFirstMove = async (choice: string) => {
     try {
-      await writeGameMove({
-        address: COMMUNICATION_CONTRACT_ADDRESS as `0x${string}`,
-        abi: COMMUNICATION_CONTRACT_ABI,
-        functionName: 'sendMessage',
+      // Determine destination chain ID based on current chain
+      const destinationChainId = chainId === CHAIN_IDS.localhost_1 
+        ? CHAIN_IDS.localhost_2 
+        : CHAIN_IDS.localhost_1;
+
+      writeGameMove({
+        address: chainId === CHAIN_IDS.localhost_1
+          ? CONTRACT_ADDRESSES.game.localhost_2 as `0x${string}`
+          : CONTRACT_ADDRESSES.game.localhost_1 as `0x${string}`,
+        abi: gameAbiJson,
+        functionName: 'startGame',
         args: [
-          choice,                    // player's move
-          currentPlayer,            // current player number
-          DESTINATION_CHAIN_ID,     // destination chain ID
-          DESTINATION_CONTRACT      // destination contract address
+          {
+            rivalChainID: destinationChainId,
+            gameNumber: 1  // You might want to track this dynamically
+          },
+          account.address,  // player1 (current player's address)
+          account.address,  // player2 (in single player, same as player1)
+          moveToNumber[choice]  // move 
         ],
       });
 
-      if (isSuccessGameMove) {
-        setLastMove(choice);
-        setGameState("TRANSITION");
-      }
     } catch (error) {
       toast.error('Failed to submit move. Please try again.', {
         duration: 5000,
@@ -95,6 +110,14 @@ function SinglePlayerGame() {
       console.error("Error submitting move:", error);
     }
   };
+
+  // Add this effect to handle successful transactions
+  useEffect(() => {
+    if (isSuccessGameMove) {
+      setLastMove(currentChoice);
+      setGameState("TRANSITION");
+    }
+  }, [isSuccessGameMove, currentChoice]);
 
   const handleNextTurn = () => {
     setCurrentPlayer((current) => (current === 1 ? 2 : 1));
@@ -127,7 +150,7 @@ function SinglePlayerGame() {
 
     return (
       <>
-        <Game currentPlayer={currentPlayer} handleMove={handleMove}/>
+        <Game currentPlayer={currentPlayer} setCurrentChoice={setCurrentChoice} handleMove={handleFirstMove}/>
         {errorGameMove && (
           <div className="mt-4 p-4 bg-red-100 border border-red-400 text-red-700 rounded">
             Error: {errorGameMove.message}

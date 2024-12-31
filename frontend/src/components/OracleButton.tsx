@@ -21,11 +21,27 @@ import { Address, Log } from "viem";
 import { getBlock } from "viem/actions";
 import { getStoredData, setStoredData } from "@/utils/Store";
 import { useGame } from "../context/GameContext";
+import { Tooltip } from "./Tooltip";
 
 type ChainAddresses = (typeof CONTRACT_ADDRESSES)["outgoing"];
 
 export function OracleButton() {
-  const { setIsOracleCalled } = useGame();
+  const { setIsOracleCalled, finalitySpeed, moveBlockNumber } = useGame();
+  const { data: currentBlockNumber } = useBlockNumber({ watch: true });
+  const [isEnabled, setIsEnabled] = useState(false);
+  const [blocksRemaining, setBlocksRemaining] = useState<number | null>(null);
+
+  const requiredBlocks = finalitySpeed === 'FAST' ? 3 : 5;
+
+  // Check block progress
+  useEffect(() => {
+    if (moveBlockNumber && currentBlockNumber) {
+      const blocksPassed = Number(currentBlockNumber) - Number(moveBlockNumber);
+      const remaining = Math.max(0, requiredBlocks - blocksPassed);
+      setBlocksRemaining(remaining);
+      setIsEnabled(blocksPassed >= requiredBlocks);
+    }
+  }, [currentBlockNumber, moveBlockNumber, requiredBlocks]);
 
   const { address, isConnected, chainId } = useAccount();
 
@@ -180,18 +196,46 @@ export function OracleButton() {
 
   return (
     <div className="flex flex-col space-y-4">
+      {/* Block countdown TODO: handle block revert */}
+      {blocksRemaining !== null && (
+        <div className="text-center">
+          {blocksRemaining > 0 ? (
+            <>
+              <p className="text-lg font-semibold text-gray-700">
+                Waiting for {blocksRemaining} more block{blocksRemaining !== 1 ? 's' : ''} 
+                <span className="animate-pulse">...</span>
+              </p>
+              <p className="text-sm text-gray-500">
+                {finalitySpeed === 'FAST' ? 
+                  'Fast mode requires 2 block confirmations' : 
+                  'Slow mode requires 5 block confirmations'}
+              </p>
+            </>
+          ) : (
+            <p className="text-lg font-semibold text-green-600">
+              Countdown finished, you can now call the oracle to submit the information.
+            </p>
+          )}
+        </div>
+      )}
+
+      {/* Oracle button */}
       {!isSuccessWriteBlock && !isSuccessWriteInReceipt && (
         <button
-          className="bg-[#F6851B] hover:bg-[#E2761B] px-8 py-4 rounded-xl text-xl font-bold transition-all transform hover:scale-105 shadow-lg text-white"
+          className={`px-8 py-4 rounded-xl text-xl font-bold transition-all transform hover:scale-105 shadow-lg text-white ${
+            isEnabled ? 
+              'bg-[#F6851B] hover:bg-[#E2761B]' : 
+              'bg-gray-400 cursor-not-allowed'
+          }`}
           onClick={handleOracleCall}
-          disabled={isPendingWriteBlock || isPendingWriteInReceipt}
+          disabled={!isEnabled || isPendingWriteBlock || isPendingWriteInReceipt}
         >
           {isPendingWriteBlock || isPendingWriteInReceipt ? (
             <div className="flex justify-center">
               <div className="animate-spin rounded-full h-6 w-6 border-b-2 border-white"></div>
             </div>
           ) : (
-            "Call Oracle"
+            isEnabled ? "Call Oracle" : "Please Wait..."
           )}
         </button>
       )}
@@ -207,12 +251,21 @@ export function OracleButton() {
           <div className="p-4 bg-green-100 border border-green-400 text-green-700 rounded font-bold text-center">
             Transaction successful!
           </div>
-          <button 
-            className="bg-[#F6851B] hover:bg-[#E2761B] px-8 py-4 rounded-xl text-xl font-bold transition-all transform hover:scale-105 shadow-lg text-white"
-            onClick={() => setIsOracleCalled(true)}
-          >
-            Play Next Move
-          </button>
+          <div className="flex items-center justify-center gap-4">
+            <button 
+              className="bg-[#F6851B] hover:bg-[#E2761B] px-8 py-4 rounded-xl text-xl font-bold transition-all transform hover:scale-105 shadow-lg text-white"
+              onClick={() => setIsOracleCalled(true)}
+            >
+              Relay Message Now
+            </button>
+            <Tooltip
+                content="The speed configuration determines the number of blocks the oracle will wait until sending the message receipt trie. If we select to wait more blocks we will have to wait longer but we will not risk having a chain reordering event that removes our message from the source chain."
+                link={{
+                  href: "https://docs.axsdasdsadsadelar.dev/",
+                  text: "Learn More",
+              }}
+            />
+          </div>
         </div>
       )}
     </div>

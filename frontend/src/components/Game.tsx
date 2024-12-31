@@ -1,6 +1,29 @@
 import { Tooltip } from "./Tooltip";
+import { useGame } from "../context/GameContext";
+import { useBlockNumber, usePublicClient } from 'wagmi';
 
-export function Game({ currentPlayer, handleMove }: { currentPlayer: number, handleMove: (choice: string) => void }) {
+export function Game({ currentPlayer, setCurrentChoice, handleMove }: { currentPlayer: number, setCurrentChoice: (choice: string) => void, handleMove: (choice: string) => void }) {
+  const { data: blockNumber, isError, isLoading } = useBlockNumber({
+    watch: true,
+  });
+  const { setMoveBlockNumber } = useGame();
+  const publicClient = usePublicClient();
+
+  const handleClick = async (choice: string) => {
+    setCurrentChoice(choice);
+    try {
+      // Get the latest block number directly if the hook hasn't updated
+      const latestBlock = blockNumber || await publicClient.getBlockNumber();
+      console.log("Block number:", latestBlock);
+      setMoveBlockNumber(latestBlock);
+    } catch (error) {
+      console.error("Error getting block number:", error);
+    }
+    setTimeout(() => {
+      handleMove(choice);
+    }, 0);
+  };
+
   return (
     <>
       <h2 className="text-3xl font-bold mb-8">
@@ -12,7 +35,7 @@ export function Game({ currentPlayer, handleMove }: { currentPlayer: number, han
           <button
             key={choice}
             className="bg-[#F6851B] hover:bg-[#E2761B] p-8 rounded-xl text-2xl font-bold transition-all transform hover:scale-105 shadow-lg text-white"
-            onClick={() => handleMove(choice)}
+            onClick={() => handleClick(choice)}
           >
             {choice === "Rock" ? "💎" : choice === "Paper" ? "📄" : "✂️"}
             <div className="mt-4">{choice}</div>
