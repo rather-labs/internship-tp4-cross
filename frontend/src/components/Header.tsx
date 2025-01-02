@@ -11,8 +11,6 @@ export function Header({ getNetworkName }: { getNetworkName: () => string }) {
         </a>
         Cross-Chain RPS
       </h1>
-      <Relayer />
-      <Oracle />
       <WalletConnection getNetworkName={getNetworkName} />
     </header>
   );

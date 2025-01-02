@@ -1,21 +1,15 @@
 "use client";
 import { useAccount, useConfig, useWatchContractEvent } from "wagmi";
-import { writeContract } from "@wagmi/core";
 import {
   CONTRACT_ABIS,
   CONTRACT_ADDRESSES,
   CHAIN_NAMES,
-  SUPPORTED_CHAINS,
   msgRelayer,
   msgReceipt,
 } from "../utils/ContractInfo"; //
-import React, { useState } from "react";
+import React from "react";
 import { Address, Hex, toHex } from "viem";
-import {
-  getBlock,
-  getTransactionReceipt,
-  waitForTransactionReceipt,
-} from "wagmi/actions";
+import { getBlock, getTransactionReceipt } from "wagmi/actions";
 import { useChainData } from "../contexts/ChainDataContext";
 import {
   getTrie,
@@ -31,7 +25,7 @@ import { RLP as rlp } from "@ethereumjs/rlp";
 //const BUS_CAPACITY = 10; // not implemented for web demonstration
 
 export default function Relayer() {
-  const { isConnected, chainId } = useAccount();
+  const { chainId } = useAccount();
 
   const { state: chainData, dispatch } = useChainData();
 
@@ -189,10 +183,5 @@ export default function Relayer() {
     },
   });
 
-  // Only watch for events if we have a valid chainId
-  if (!isConnected || !chainId) {
-    return <div>Please connect your wallet</div>;
-  }
-
-  return <div className="p-4 rounded-lg bg-[#ffffff]"></div>;
+  return <></>;
 }

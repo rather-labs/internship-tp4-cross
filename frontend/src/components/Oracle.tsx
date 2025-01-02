@@ -18,7 +18,7 @@ import { useChainData } from "../contexts/ChainDataContext";
 type ChainAddresses = (typeof CONTRACT_ADDRESSES)["outgoing"];
 
 export default function Oracle() {
-  const { isConnected, chainId } = useAccount();
+  const { chainId } = useAccount();
 
   const { state: chainData, dispatch } = useChainData();
 
@@ -94,10 +94,5 @@ export default function Oracle() {
   //  },
   //});
 
-  // Only watch for events if we have a valid chainId
-  if (!isConnected || !chainId) {
-    return <div>Please connect your wallet</div>;
-  }
-
-  return <div className="flex flex-col space-y-4"></div>;
+  return <></>;
 }
