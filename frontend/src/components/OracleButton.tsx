@@ -1,71 +1,50 @@
+"use client";
 import {
   useAccount,
-  useClient,
-  useWriteContract,
   useBlockNumber,
   useConfig,
-  useChainId,
   useWatchContractEvent,
 } from "wagmi";
+import { writeContract } from "@wagmi/core";
 import {
-  EVENT_SIGNATURES,
   CONTRACT_ABIS,
   CONTRACT_ADDRESSES,
-  CHAIN_IDS,
   CHAIN_NAMES,
-  EXTERNAL_ADDRESSES,
   SUPPORTED_CHAINS,
 } from "../utils/ContractInfo"; //
 import React, { useEffect, useState } from "react";
-import { Address, Log } from "viem";
-import { getBlock } from "viem/actions";
-import { getStoredData, setStoredData } from "@/utils/Store";
-import { useGame } from "../context/GameContext";
+import { Address } from "viem";
+import { getBlock, waitForTransactionReceipt } from "wagmi/actions";
+import { useChainData } from "../contexts/ChainDataContext";
+import { useGame } from "../contexts/GameContext";
 import { Tooltip } from "./Tooltip";
 
 type ChainAddresses = (typeof CONTRACT_ADDRESSES)["outgoing"];
 
-export function OracleButton() {
-  const { setIsOracleCalled, finalitySpeed, moveBlockNumber } = useGame();
-  const { data: currentBlockNumber } = useBlockNumber({ watch: true });
-  const [isEnabled, setIsEnabled] = useState(false);
-  const [blocksRemaining, setBlocksRemaining] = useState<number | null>(null);
+export default function OracleButton() {
+  const { isConnected, chainId } = useAccount();
 
-  const requiredBlocks = finalitySpeed === 'FAST' ? 3 : 5;
-
-  // Check block progress
-  useEffect(() => {
-    if (moveBlockNumber && currentBlockNumber) {
-      const blocksPassed = Number(currentBlockNumber) - Number(moveBlockNumber);
-      const remaining = Math.max(0, requiredBlocks - blocksPassed);
-      setBlocksRemaining(remaining);
-      setIsEnabled(blocksPassed >= requiredBlocks);
-    }
-  }, [currentBlockNumber, moveBlockNumber, requiredBlocks]);
-
-  const { address, isConnected, chainId } = useAccount();
-
-  const {
-    writeContract: writeContractBlock,
-    error: errorWriteBlock,
-    isPending: isPendingWriteBlock,
-    isSuccess: isSuccessWriteBlock,
-  } = useWriteContract();
-
-  const {
-    writeContract: writeContractInReceipt,
-    error: errorWriteInReceipt,
-    isPending: isPendingWriteInReceipt,
-    isSuccess: isSuccessWriteInReceipt,
-  } = useWriteContract();
-
-  const [data, setData] = useState<string>("No data");
+  const { state: chainData, dispatch } = useChainData();
 
   let config = useConfig();
+
+  const [errorWriteBlock, setErrorWriteBlock] = useState("");
+  const [isPendingWriteBlock, setPendingWriteBlock] = useState(false);
+  const [isSuccessWriteBlock, setSuccessWriteBlock] = useState(false);
+
+  const [errorWriteInReceipt, setErrorWriteInReceipt] = useState("");
+  const [isPendingWriteInReceipt, setPendingWriteInReceipt] = useState(false);
+  const [isSuccessWriteInReceipt, setSuccessWriteInReceipt] = useState(false);
 
   const { data: blockNumber } = useBlockNumber({
     watch: true,
   });
+
+  const { setIsOracleCalled, finalitySpeed, moveBlockNumber } = useGame();
+  const [isEnabled, setIsEnabled] = useState(false);
+  const [blocksRemaining, setBlocksRemaining] = useState<number | null>(null);
+
+  const requiredBlocks = finalitySpeed === "FAST" ? 3 : 5;
 
   // Get the correct contract address for the current chain
   const verificationAddress = CONTRACT_ADDRESSES["verification"][
@@ -77,90 +56,105 @@ export function OracleButton() {
     CHAIN_NAMES[chainId as keyof typeof CHAIN_NAMES] as keyof ChainAddresses
   ] as Address;
 
-  // Get the correct contract address for the current chain
-  const incomingAddress = CONTRACT_ADDRESSES["incoming"][
-    CHAIN_NAMES[chainId as keyof typeof CHAIN_NAMES] as keyof ChainAddresses
-  ] as Address;
-
   useEffect(() => {
-    setData(blockNumber ? blockNumber.toString() : "");
-    setStoredData(`blocknumber_${chainId}`, blockNumber?.toString() ?? "");
+    if (blockNumber === undefined || chainId === undefined) return;
+    dispatch({
+      type: "UPDATE_BLOCK_NUMBER",
+      chainId: chainId,
+      blockNumber: Number(blockNumber),
+    });
+    console.log("Oracle: blockNumber", blockNumber);
+    console.log(chainData);
   }, [blockNumber]);
 
+  useEffect(() => {
+    if (blockNumber === undefined || chainId === undefined) return;
+    if (moveBlockNumber) {
+      const blocksPassed = Number(blockNumber) - Number(moveBlockNumber);
+      const remaining = Math.max(0, requiredBlocks - blocksPassed);
+      setBlocksRemaining(remaining);
+      setIsEnabled(blocksPassed >= requiredBlocks);
+    }
+  }, [blockNumber, moveBlockNumber, requiredBlocks]);
+
   const handleInboundBlockNumbers = async () => {
+    console.log("Oracle: handleInboundBlockNumbers");
     for (const chain of SUPPORTED_CHAINS) {
-      if (chain === chainId) continue;
-      const bNumber = getStoredData(`blocknumber_${chain}`);
+      if (chain === chainId || chainData[chain] === undefined) continue;
+      setErrorWriteBlock("");
+      setPendingWriteBlock(true);
+      setSuccessWriteBlock(false);
       try {
-        writeContractBlock({
+        const txHash = await writeContract(config, {
           address: verificationAddress,
           abi: JSON.parse(CONTRACT_ABIS["verification"]),
           functionName: "setLastBlock",
-          args: [chain, bNumber],
+          args: [chain, chainData[chain].blockNumber],
         });
-      } catch (error) {
+        await waitForTransactionReceipt(config, {
+          hash: txHash,
+        });
+        setSuccessWriteBlock(true);
+      } catch (error: any) {
         console.error("Error setting blocknumber:", error);
+        setErrorWriteBlock(error.message);
       }
+      setPendingWriteBlock(false);
     }
   };
 
   const handleInboundReceiptTrie = async () => {
-    const receiptTrieRoots = getStoredData(`receiptTrieRoots_${chainId}`) ?? [];
-    for (let i = 0; i < receiptTrieRoots.length; i++) {
+    console.log("Oracle: handleInboundReceiptTrie");
+    if (
+      chainId === undefined ||
+      chainData[chainId] === undefined ||
+      chainData[chainId].receiptTrieRoots === undefined
+    )
+      return;
+    for (const receipt of chainData[chainId].receiptTrieRoots) {
+      setErrorWriteInReceipt("");
+      setPendingWriteInReceipt(true);
+      setSuccessWriteInReceipt(false);
       try {
-        writeContractInReceipt({
+        const txHash = await writeContract(config, {
           address: verificationAddress,
           abi: JSON.parse(CONTRACT_ABIS["verification"]),
           functionName: "setRecTrieRoot",
-          args: receiptTrieRoots[i],
+          args: receipt,
         });
-        // Remove the successfully processed root
-        receiptTrieRoots.splice(i, 1);
-        i--; // Adjust index since we removed an element
-      } catch (error) {
+        await waitForTransactionReceipt(config, {
+          hash: txHash,
+        });
+        // Remove the inbount root
+        dispatch({
+          type: "REMOVE_RECEIPT_TRIE_ROOT",
+          chainId,
+          sourceId: receipt[0],
+          blockNumber: receipt[1],
+        });
+        setSuccessWriteInReceipt(true);
+      } catch (error: any) {
         console.error("Error setting receipt trie root:", error);
+        setErrorWriteInReceipt(error.message);
       }
+      setPendingWriteInReceipt(false);
     }
-    setStoredData(`receiptTrieRoots_${chainId}`, receiptTrieRoots);
   };
 
   const handleEmitMsg = async (log: any) => {
+    console.log("Oracle: handleEmitMsg");
     // Store receipt trie root in local storage
-    const Block = await getBlock(config.getClient(), {
+    const Block = await getBlock(config, {
       blockNumber: log.blockNumber,
     });
-    console.log("log", log);
-    // Get preiviously stored receipt trie roots
-    const receiptTrieRoots =
-      getStoredData(`receiptTrieRoots_${log.args.destinationBC}`) ?? [];
-    receiptTrieRoots.push([
-      chainId,
-      Number(log.blockNumber),
-      Block.receiptsRoot,
-    ]);
-    console.log("receiptTrieRoots", receiptTrieRoots);
-    setStoredData(
-      `receiptTrieRoots_${log.args.destinationBC}`,
-      receiptTrieRoots
-    );
-  };
-
-  const handleMsgDelivered = async (log: any) => {
-    // Store receipt trie root in local storage
-    const Block = await getBlock(config.getClient(), {
-      blockNumber: log.blockNumber,
+    if (chainId === undefined) return;
+    dispatch({
+      type: "ADD_RECEIPT_TRIE_ROOT",
+      chainId: log.args.destinationBC,
+      sourceId: chainId,
+      blockNumber: Number(log.blockNumber),
+      root: Block.receiptsRoot,
     });
-    console.log("log", log);
-    // Get preiviously stored receipt trie roots
-    const receiptTrieRoots =
-      getStoredData(`receiptTrieRoots_${log.args.sourceBC}`) ?? [];
-    receiptTrieRoots.push([
-      chainId,
-      Number(log.blockNumber),
-      Block.receiptsRoot,
-    ]);
-    console.log("receiptTrieRoots", receiptTrieRoots);
-    setStoredData(`receiptTrieRoots_${log.args.sourceBC}`, receiptTrieRoots);
   };
 
   //check if useWatchContractEvent requires third party rpc's can't be used for tutorial implementation
@@ -174,16 +168,33 @@ export function OracleButton() {
     },
   });
 
-  //check if useWatchContractEvent requires third party rpc's can't be used for tutorial implementation
-  useWatchContractEvent({
-    address: incomingAddress,
-    abi: JSON.parse(CONTRACT_ABIS["incoming"]),
-    eventName: "InboundMessagesRes",
-    pollingInterval: 10_000,
-    onLogs(logs: any) {
-      handleMsgDelivered(logs[0]);
-    },
-  });
+  // As there's no payment to relayer, this is not needed
+  //const handleMsgDelivered = async (log: any) => {
+  //  console.log("Oracle: handleMsgDelivered");
+  //  const Block = await getBlock(config, {
+  //    blockNumber: log.blockNumber,
+  //  });
+  //  dispatch({
+  //    type: "ADD_RECEIPT_TRIE_ROOT",
+  //    chainId: chainId ?? 0,
+  //    blockNumber: log.blockNumber,
+  //    root: Block.receiptsRoot,
+  //  });
+  //};
+  //useWatchContractEvent({
+  //  address: incomingAddress,
+  //  abi: JSON.parse(CONTRACT_ABIS["incoming"]),
+  //  eventName: "InboundMessagesRes",
+  //  pollingInterval: 10_000,
+  //  onLogs(logs: any) {
+  //    handleMsgDelivered(logs[0]);
+  //  },
+  //});
+
+  // Only watch for events if we have a valid chainId
+  if (!isConnected || !chainId) {
+    return <div>Please connect your wallet</div>;
+  }
 
   const handleOracleCall = async () => {
     try {
@@ -202,18 +213,20 @@ export function OracleButton() {
           {blocksRemaining > 0 ? (
             <>
               <p className="text-lg font-semibold text-gray-700">
-                Waiting for {blocksRemaining} more block{blocksRemaining !== 1 ? 's' : ''} 
+                Waiting for {blocksRemaining} more block
+                {blocksRemaining !== 1 ? "s" : ""}
                 <span className="animate-pulse">...</span>
               </p>
               <p className="text-sm text-gray-500">
-                {finalitySpeed === 'FAST' ? 
-                  'Fast mode requires 2 block confirmations' : 
-                  'Slow mode requires 5 block confirmations'}
+                {finalitySpeed === "FAST"
+                  ? "Fast mode requires 2 block confirmations"
+                  : "Slow mode requires 5 block confirmations"}
               </p>
             </>
           ) : (
             <p className="text-lg font-semibold text-green-600">
-              Countdown finished, you can now call the oracle to submit the information.
+              Countdown finished, you can now call the oracle to submit the
+              information.
             </p>
           )}
         </div>
@@ -223,26 +236,30 @@ export function OracleButton() {
       {!isSuccessWriteBlock && !isSuccessWriteInReceipt && (
         <button
           className={`px-8 py-4 rounded-xl text-xl font-bold transition-all transform hover:scale-105 shadow-lg text-white ${
-            isEnabled ? 
-              'bg-[#F6851B] hover:bg-[#E2761B]' : 
-              'bg-gray-400 cursor-not-allowed'
+            isEnabled
+              ? "bg-[#F6851B] hover:bg-[#E2761B]"
+              : "bg-gray-400 cursor-not-allowed"
           }`}
           onClick={handleOracleCall}
-          disabled={!isEnabled || isPendingWriteBlock || isPendingWriteInReceipt}
+          disabled={
+            !isEnabled || isPendingWriteBlock || isPendingWriteInReceipt
+          }
         >
           {isPendingWriteBlock || isPendingWriteInReceipt ? (
             <div className="flex justify-center">
               <div className="animate-spin rounded-full h-6 w-6 border-b-2 border-white"></div>
             </div>
+          ) : isEnabled ? (
+            "Call Oracle"
           ) : (
-            isEnabled ? "Call Oracle" : "Please Wait..."
+            "Please Wait..."
           )}
         </button>
       )}
 
       {(errorWriteBlock || errorWriteInReceipt) && (
         <div className="p-4 bg-red-100 border border-red-400 text-red-700 rounded">
-          Error: {errorWriteBlock?.message || errorWriteInReceipt?.message}
+          Error: {errorWriteBlock || errorWriteInReceipt}
         </div>
       )}
 
@@ -252,17 +269,17 @@ export function OracleButton() {
             Transaction successful!
           </div>
           <div className="flex items-center justify-center gap-4">
-            <button 
+            <button
               className="bg-[#F6851B] hover:bg-[#E2761B] px-8 py-4 rounded-xl text-xl font-bold transition-all transform hover:scale-105 shadow-lg text-white"
               onClick={() => setIsOracleCalled(true)}
             >
               Relay Message Now
             </button>
             <Tooltip
-                content="The speed configuration determines the number of blocks the oracle will wait until sending the message receipt trie. If we select to wait more blocks we will have to wait longer but we will not risk having a chain reordering event that removes our message from the source chain."
-                link={{
-                  href: "https://docs.axsdasdsadsadelar.dev/",
-                  text: "Learn More",
+              content="The speed configuration determines the number of blocks the oracle will wait until sending the message receipt trie. If we select to wait more blocks we will have to wait longer but we will not risk having a chain reordering event that removes our message from the source chain."
+              link={{
+                href: "https://docs.axsdasdsadsadelar.dev/",
+                text: "Learn More",
               }}
             />
           </div>

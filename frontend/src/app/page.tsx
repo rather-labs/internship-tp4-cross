@@ -2,16 +2,14 @@
 
 import { useAccount, useConnect, useDisconnect } from "wagmi";
 import { useState, useEffect } from "react";
-import Image from "next/image";
 import { useRouter } from "next/navigation";
 import toast, { Toaster } from "react-hot-toast";
-import { WalletConnection } from "@/components/WalletConnection";
 import { Tooltip } from "@/components/Tooltip";
 import { Header } from "@/components/Header";
 
 function App() {
   const account = useAccount();
-  const { connectors, connect, status, error } = useConnect();
+  const { connectors, connect } = useConnect();
   const { disconnect } = useDisconnect();
   const [playerCount, setPlayerCount] = useState<1 | 2 | null>(null);
   const router = useRouter();

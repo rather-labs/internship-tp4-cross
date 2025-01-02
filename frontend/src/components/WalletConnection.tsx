@@ -1,20 +1,18 @@
 "use client";
 
 import { useAccount, useConnect, useDisconnect } from "wagmi";
-import { useLocalStorage } from '@/hooks/useLocalStorage'
 
 interface WalletConnectionProps {
   getNetworkName: (chainId?: number) => string;
 }
 
 export function WalletConnection({ getNetworkName }: WalletConnectionProps) {
-  const [storedChainId, setStoredChainId] = useLocalStorage('STORAGE_DAPP_CHAINID', '')
   const account = useAccount();
   const { connectors, connect } = useConnect();
   const { disconnect } = useDisconnect();
 
   // Use account.chainId for the actual chain ID
-  const chainId = account.chainId || Number(storedChainId) || undefined;
+  const chainId = account.chainId;
 
   const metamaskConnector = connectors.find(
     (connector) => connector.name === "MetaMask"

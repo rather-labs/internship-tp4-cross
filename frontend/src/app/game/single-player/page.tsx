@@ -1,32 +1,35 @@
 "use client";
 
-import { useAccount, useDisconnect, useWriteContract } from "wagmi";
+import { useAccount, useConfig, useDisconnect, useWriteContract } from "wagmi";
 import { useState, useEffect } from "react";
-import Image from "next/image";
 import { useRouter } from "next/navigation";
 import toast, { Toaster } from "react-hot-toast";
-import { WalletConnection } from "@/components/WalletConnection";
-import { Tooltip } from "@/components/Tooltip";
-import { OracleButton } from "@/components/OracleButton";
 import { CallOracle } from "@/components/CallOracle";
 import { Transition } from "@/components/Transition";
 import { Game } from "@/components/Game";
 import { Header } from "@/components/Header";
-import { GameProvider } from '@/context/GameContext';
-import { useGame } from '@/context/GameContext';
-import { CONTRACT_ADDRESSES, CHAIN_IDS } from "@/utils/ContractInfo";
-import gameAbiJson from '../../../utils/contracts/game.json';
-import { moveCursor } from "readline";
+import { GameProvider } from "@/contexts/GameContext";
+import { useGame } from "@/contexts/GameContext";
+import {
+  CONTRACT_ADDRESSES,
+  CHAIN_IDS,
+  CONTRACT_ABIS,
+  BLOCKS_FOR_FINALITY,
+} from "@/utils/ContractInfo";
+import { writeContract } from "@wagmi/core";
+import { waitForTransactionReceipt } from "wagmi/actions";
+import { Tooltip } from "@/components/Tooltip";
 
 const moveToNumber: { [key: string]: number } = {
-  'Rock': 1,
-  'Paper': 2,
-  'Scissors': 3
+  Rock: 1,
+  Paper: 2,
+  Scissors: 3,
 };
 
 function SinglePlayerGame() {
   const router = useRouter();
   const account = useAccount();
+  let config = useConfig();
   const { disconnect } = useDisconnect();
   const [currentPlayer, setCurrentPlayer] = useState<1 | 2>(1);
   const [gameState, setGameState] = useState<
@@ -34,14 +37,17 @@ function SinglePlayerGame() {
   >("WAITING");
   const [lastMove, setLastMove] = useState<string | null>(null);
   const chainId = account.chainId;
-  const { isOracleCalled, setCurrentChoice, currentChoice } = useGame();
-
   const {
-    writeContract: writeGameMove,
-    error: errorGameMove,
-    isPending: isPendingGameMove,
-    isSuccess: isSuccessGameMove,
-  } = useWriteContract();
+    isOracleCalled,
+    setCurrentChoice,
+    currentChoice,
+    finalitySpeed,
+    setFinalitySpeed,
+  } = useGame();
+
+  const [errorGameMove, setErrorGameMove] = useState("");
+  const [isPendingGameMove, setPendingGameMove] = useState(false);
+  const [isSuccessGameMove, setSuccessGameMove] = useState(false);
 
   // Redirect if not connected
   useEffect(() => {
@@ -76,39 +82,45 @@ function SinglePlayerGame() {
   const handleFirstMove = async (choice: string) => {
     try {
       // Determine destination chain ID based on current chain
-      const destinationChainId = chainId === CHAIN_IDS.localhost_1 
-        ? CHAIN_IDS.localhost_2 
-        : CHAIN_IDS.localhost_1;
-
-      writeGameMove({
-        address: chainId === CHAIN_IDS.localhost_1
-          ? CONTRACT_ADDRESSES.game.localhost_2 as `0x${string}`
-          : CONTRACT_ADDRESSES.game.localhost_1 as `0x${string}`,
-        abi: gameAbiJson,
-        functionName: 'startGame',
+      const destinationChainId =
+        chainId === CHAIN_IDS.localhost_1
+          ? CHAIN_IDS.localhost_2
+          : CHAIN_IDS.localhost_1;
+      setErrorGameMove("");
+      setPendingGameMove(true);
+      setSuccessGameMove(false);
+      const txHash = await writeContract(config, {
+        address:
+          chainId === CHAIN_IDS.localhost_1
+            ? (CONTRACT_ADDRESSES.game.localhost_2 as `0x${string}`)
+            : (CONTRACT_ADDRESSES.game.localhost_1 as `0x${string}`),
+        abi: JSON.parse(CONTRACT_ABIS["game"]),
+        functionName: "startGame",
         args: [
-          {
-            rivalChainID: destinationChainId,
-            gameNumber: 1  // You might want to track this dynamically
-          },
-          account.address,  // player1 (current player's address)
-          account.address,  // player2 (in single player, same as player1)
-          moveToNumber[choice]  // move 
+          account.address as `0x${string}`, // player2 (in single player, same as player1)
+          destinationChainId,
+          moveToNumber[choice], // move
+          finalitySpeed ? BLOCKS_FOR_FINALITY[finalitySpeed] : 1,
         ],
       });
-
-    } catch (error) {
-      toast.error('Failed to submit move. Please try again.', {
+      await waitForTransactionReceipt(config, {
+        hash: txHash,
+      });
+      setSuccessGameMove(true);
+    } catch (error: any) {
+      toast.error("Failed to submit move. Please try again.", {
         duration: 5000,
-        position: 'top-center',
+        position: "top-center",
         style: {
-          background: '#FEE2E2',
-          color: '#991B1B',
-          border: '1px solid #F87171',
+          background: "#FEE2E2",
+          color: "#991B1B",
+          border: "1px solid #F87171",
         },
       });
+      setErrorGameMove(error.message);
       console.error("Error submitting move:", error);
     }
+    setPendingGameMove(false);
   };
 
   // Add this effect to handle successful transactions
@@ -143,26 +155,73 @@ function SinglePlayerGame() {
   const renderGameContent = () => {
     if (gameState === "TRANSITION") {
       if (!isOracleCalled) {
-        return <CallOracle />
+        return <CallOracle />;
       }
-      return <Transition handleNextTurn={handleNextTurn} currentPlayer={currentPlayer}/>
+      return (
+        <Transition
+          handleNextTurn={handleNextTurn}
+          currentPlayer={currentPlayer}
+        />
+      );
     }
 
     return (
       <>
-        <Game currentPlayer={currentPlayer} setCurrentChoice={setCurrentChoice} handleMove={handleFirstMove}/>
-        {errorGameMove && (
-          <div className="mt-4 p-4 bg-red-100 border border-red-400 text-red-700 rounded">
-            Error: {errorGameMove.message}
+        {!finalitySpeed ? (
+          <div className="space-y-6">
+            <div className="border-2 border-gray-300 bg-white shadow-lg p-6 rounded-xl">
+              <p className="text-xl mb-4">Choose Transaction Finality Speed</p>
+              <p className="text-sm text-gray-600">
+                Fast: Wait less blocks, quicker finality, less confidence
+                <br />
+                Slow: Wait more, slower finality, more confidence
+              </p>
+            </div>
+
+            <div className="flex justify-center items-center gap-4">
+              <button
+                onClick={() => setFinalitySpeed("FAST")}
+                className="bg-[#037DD6] hover:bg-[#0260A4] px-8 py-4 rounded-xl text-xl font-bold transition-all transform hover:scale-105 shadow-lg text-white"
+              >
+                Fast ⚡
+              </button>
+              <button
+                onClick={() => setFinalitySpeed("SLOW")}
+                className="bg-[#6A737D] hover:bg-[#4A5056] px-8 py-4 rounded-xl text-xl font-bold transition-all transform hover:scale-105 shadow-lg text-white"
+              >
+                Slow 🐢
+              </button>
+              <Tooltip
+                content="The speed configuration determines the number of blocks the oracle will wait until sending the message receipt trie. If we select to wait more blocks we will have to wait longer but we will not risk having a chain reordering event that removes our message from the source chain."
+                link={{
+                  href: "https://docs.axelar.dev/",
+                  text: "Learn More",
+                }}
+              />
+            </div>
           </div>
-        )}
-        {isPendingGameMove && (
-          <div className="mt-4 p-4 bg-blue-100 border border-blue-400 text-blue-700 rounded">
-            Submitting move to blockchain...
-          </div>
+        ) : (
+          <>
+            <Game
+              currentPlayer={currentPlayer}
+              setCurrentChoice={setCurrentChoice}
+              handleMove={handleFirstMove}
+              disableMove={isPendingGameMove}
+            />
+            {errorGameMove && (
+              <div className="mt-4 p-4 bg-red-100 border border-red-400 text-red-700 rounded">
+                Error: {errorGameMove}
+              </div>
+            )}
+            {isPendingGameMove && (
+              <div className="mt-4 p-4 bg-blue-100 border border-blue-400 text-blue-700 rounded">
+                Submitting move to blockchain...
+              </div>
+            )}
+          </>
         )}
       </>
-    )
+    );
   };
 
   try {
