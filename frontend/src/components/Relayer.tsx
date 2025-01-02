@@ -27,24 +27,15 @@ import {
 } from "@/utils/mpt";
 import { RLP as rlp } from "@ethereumjs/rlp";
 
-const GAS_CONFIG = {
-  maxFeePerGas: 100000000000n, // 100 gwei
-  maxPriorityFeePerGas: 2000000000n, // 2 gwei
-};
 // Ammount of messages required to fill up bus in the taxi/bus logic (and relay them)
 //const BUS_CAPACITY = 10; // not implemented for web demonstration
 
 export default function Relayer() {
-  const { address: walletAddress, isConnected, chainId } = useAccount();
+  const { isConnected, chainId } = useAccount();
 
   const { state: chainData, dispatch } = useChainData();
 
   let config = useConfig();
-
-  const [writeError, setWriteError] = useState("");
-  const [isSuccess, setIsSuccess] = useState(false);
-
-  const [inboundingMsgs, setInboundingMsgs] = useState(false);
 
   // Get the correct contract address for the current chain
   const incomingAddress = CONTRACT_ADDRESSES["incoming"][
@@ -118,69 +109,6 @@ export default function Relayer() {
       proof.map((value: any) => toHex(value)),
     ];
   }
-
-  const handleInboundMsgs = async () => {
-    console.log("Relayer: handleInboundMsgs");
-    setInboundingMsgs(true);
-    setWriteError("");
-    for (const chain of SUPPORTED_CHAINS) {
-      if (
-        chainId === undefined ||
-        chainData[chain] === undefined ||
-        chainData[chain].outgoingMsgs === undefined
-      )
-        continue;
-      const inboundMsgs = chainData[chain].outgoingMsgs.filter(
-        (msg: msgRelayer) =>
-          msg.destinationBC == chainId &&
-          msg.finalityBlock <= chainData[chain].blockNumber
-      );
-      if (inboundMsgs.length == 0) {
-        continue;
-      }
-      const [receipts, proofs, blockNumbers] = inboundMsgs.reduce(
-        (acc, msg) => {
-          acc[0].push(msg.receipt),
-            acc[1].push(msg.proof),
-            acc[2].push(msg.blockNumber);
-          return acc;
-        },
-        [[], [], []] as [msgReceipt[], Hex[][], number[]]
-      );
-      console.log("receipts", receipts);
-      console.log("blockNumbers", blockNumbers);
-      if (receipts.length == 0) {
-        continue;
-      }
-      try {
-        setIsSuccess(false);
-        const txHash = await writeContract(config, {
-          address: incomingAddress,
-          abi: JSON.parse(CONTRACT_ABIS["incoming"]),
-          functionName: "inboundMessages",
-          args: [
-            receipts,
-            proofs,
-            walletAddress as Address,
-            chain,
-            blockNumbers,
-          ],
-          //gas: 30000000n, // Explicit gas limit
-          //...GAS_CONFIG, // Add gas price configuration
-        });
-        await waitForTransactionReceipt(config, {
-          hash: txHash,
-        });
-        setIsSuccess(true);
-      } catch (error: any) {
-        setWriteError(
-          writeError + (error.reason ?? error.data?.message ?? error.message)
-        );
-        console.error("Error Inbounding messages:", error);
-      }
-      setInboundingMsgs(false);
-    }
-  };
 
   const handleEmitMsg = async (log: any) => {
     console.log("Relayer: handleEmitMsg");
@@ -266,33 +194,5 @@ export default function Relayer() {
     return <div>Please connect your wallet</div>;
   }
 
-  return (
-    <div className="p-4 rounded-lg bg-[#ffffff]">
-      <div className="flex flex-col space-y-4">
-        <button
-          className="bg-[#037DD6] hover:bg-[#0260A4] px-8 py-4 rounded-xl text-xl font-bold transition-all transform hover:scale-105 shadow-lg"
-          onClick={() => handleInboundMsgs()}
-          disabled={inboundingMsgs}
-        >
-          {inboundingMsgs ? (
-            <div className="flex items-center justify-center">
-              <div className="animate-spin rounded-full h-6 w-6 border-b-2 border-white"></div>
-            </div>
-          ) : (
-            "Inbound messages that have reached finality"
-          )}
-        </button>
-        {writeError && (
-          <div className="p-4 bg-red-100 border border-red-400 text-red-700 rounded">
-            Error: {writeError}
-          </div>
-        )}
-        {isSuccess && (
-          <div className="p-4 bg-green-100 border border-green-400 text-green-700 rounded font-bold text-center">
-            Transaction successful!
-          </div>
-        )}
-      </div>
-    </div>
-  );
+  return <div className="p-4 rounded-lg bg-[#ffffff]"></div>;
 }

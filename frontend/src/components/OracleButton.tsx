@@ -1,10 +1,5 @@
 "use client";
-import {
-  useAccount,
-  useBlockNumber,
-  useConfig,
-  useWatchContractEvent,
-} from "wagmi";
+import { useAccount, useBlockNumber, useConfig } from "wagmi";
 import { writeContract } from "@wagmi/core";
 import {
   CONTRACT_ABIS,
@@ -14,7 +9,7 @@ import {
 } from "../utils/ContractInfo"; //
 import React, { useEffect, useState } from "react";
 import { Address } from "viem";
-import { getBlock, waitForTransactionReceipt } from "wagmi/actions";
+import { waitForTransactionReceipt } from "wagmi/actions";
 import { useChainData } from "../contexts/ChainDataContext";
 import { useGame } from "../contexts/GameContext";
 import { Tooltip } from "./Tooltip";
@@ -50,22 +45,6 @@ export default function OracleButton() {
   const verificationAddress = CONTRACT_ADDRESSES["verification"][
     CHAIN_NAMES[chainId as keyof typeof CHAIN_NAMES] as keyof ChainAddresses
   ] as Address;
-
-  // Get the correct contract address for the current chain
-  const outgoingAddress = CONTRACT_ADDRESSES["outgoing"][
-    CHAIN_NAMES[chainId as keyof typeof CHAIN_NAMES] as keyof ChainAddresses
-  ] as Address;
-
-  useEffect(() => {
-    if (blockNumber === undefined || chainId === undefined) return;
-    dispatch({
-      type: "UPDATE_BLOCK_NUMBER",
-      chainId: chainId,
-      blockNumber: Number(blockNumber),
-    });
-    console.log("Oracle: blockNumber", blockNumber);
-    console.log(chainData);
-  }, [blockNumber]);
 
   useEffect(() => {
     if (blockNumber === undefined || chainId === undefined) return;
@@ -140,56 +119,6 @@ export default function OracleButton() {
       setPendingWriteInReceipt(false);
     }
   };
-
-  const handleEmitMsg = async (log: any) => {
-    console.log("Oracle: handleEmitMsg");
-    // Store receipt trie root in local storage
-    const Block = await getBlock(config, {
-      blockNumber: log.blockNumber,
-    });
-    if (chainId === undefined) return;
-    dispatch({
-      type: "ADD_RECEIPT_TRIE_ROOT",
-      chainId: log.args.destinationBC,
-      sourceId: chainId,
-      blockNumber: Number(log.blockNumber),
-      root: Block.receiptsRoot,
-    });
-  };
-
-  //check if useWatchContractEvent requires third party rpc's can't be used for tutorial implementation
-  useWatchContractEvent({
-    address: outgoingAddress,
-    abi: JSON.parse(CONTRACT_ABIS["outgoing"]),
-    eventName: "OutboundMessage",
-    pollingInterval: 10_000,
-    onLogs(logs: any) {
-      handleEmitMsg(logs[0]);
-    },
-  });
-
-  // As there's no payment to relayer, this is not needed
-  //const handleMsgDelivered = async (log: any) => {
-  //  console.log("Oracle: handleMsgDelivered");
-  //  const Block = await getBlock(config, {
-  //    blockNumber: log.blockNumber,
-  //  });
-  //  dispatch({
-  //    type: "ADD_RECEIPT_TRIE_ROOT",
-  //    chainId: chainId ?? 0,
-  //    blockNumber: log.blockNumber,
-  //    root: Block.receiptsRoot,
-  //  });
-  //};
-  //useWatchContractEvent({
-  //  address: incomingAddress,
-  //  abi: JSON.parse(CONTRACT_ABIS["incoming"]),
-  //  eventName: "InboundMessagesRes",
-  //  pollingInterval: 10_000,
-  //  onLogs(logs: any) {
-  //    handleMsgDelivered(logs[0]);
-  //  },
-  //});
 
   // Only watch for events if we have a valid chainId
   if (!isConnected || !chainId) {

@@ -15,6 +15,7 @@ import {
   CHAIN_IDS,
   CONTRACT_ABIS,
   BLOCKS_FOR_FINALITY,
+  CHAIN_NAMES,
 } from "@/utils/ContractInfo";
 import { writeContract } from "@wagmi/core";
 import { waitForTransactionReceipt } from "wagmi/actions";
@@ -90,10 +91,11 @@ function SinglePlayerGame() {
       setPendingGameMove(true);
       setSuccessGameMove(false);
       const txHash = await writeContract(config, {
-        address:
-          chainId === CHAIN_IDS.localhost_1
-            ? (CONTRACT_ADDRESSES.game.localhost_2 as `0x${string}`)
-            : (CONTRACT_ADDRESSES.game.localhost_1 as `0x${string}`),
+        address: CONTRACT_ADDRESSES["game"][
+          CHAIN_NAMES[
+            chainId as keyof typeof CHAIN_NAMES
+          ] as keyof (typeof CONTRACT_ADDRESSES)["game"]
+        ] as `0x${string}`,
         abi: JSON.parse(CONTRACT_ABIS["game"]),
         functionName: "startGame",
         args: [
