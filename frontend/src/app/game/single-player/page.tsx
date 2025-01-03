@@ -44,6 +44,8 @@ function SinglePlayerGame() {
     currentChoice,
     finalitySpeed,
     setFinalitySpeed,
+    setBlockChains,
+    setMoveNumber,
   } = useGame();
 
   const [errorGameMove, setErrorGameMove] = useState("");
@@ -56,29 +58,6 @@ function SinglePlayerGame() {
       router.push("/");
     }
   }, [account.status, router]);
-
-  // Check if the network is supported
-  useEffect(() => {
-    if (chainId) {
-      const network = getAllowedNetworks().find((net) => net.id === chainId);
-      if (!network) {
-        const errorMsg = `Network not supported. Please switch to one of: ${getAllowedNetworks()
-          .map((net) => net.name)
-          .join(", ")}`;
-        toast.error(errorMsg, {
-          duration: 7000,
-          position: "top-center",
-          style: {
-            background: "#FEE2E2",
-            color: "#991B1B",
-            border: "1px solid #F87171",
-          },
-        });
-        disconnect();
-        router.push("/");
-      }
-    }
-  }, [chainId, disconnect, router]);
 
   const handleFirstMove = async (choice: string) => {
     try {
@@ -108,6 +87,8 @@ function SinglePlayerGame() {
       await waitForTransactionReceipt(config, {
         hash: txHash,
       });
+      setBlockChains([chainId, destinationChainId]);
+      setMoveNumber(1);
       setSuccessGameMove(true);
     } catch (error: any) {
       toast.error("Failed to submit move. Please try again.", {
@@ -137,21 +118,6 @@ function SinglePlayerGame() {
     setCurrentPlayer((current) => (current === 1 ? 2 : 1));
     setGameState("PLAYING");
     setLastMove(null);
-  };
-
-  const getAllowedNetworks = () => [
-    { id: 1, name: "Ethereum" },
-    { id: 17000, name: "Holesky" },
-    { id: 11155111, name: "Sepolia" },
-    { id: 56, name: "BSC" },
-    { id: 97, name: "BSC Testnet" },
-    { id: 31337, name: "Localhost" },
-    { id: 31338, name: "Localhost2" },
-  ];
-
-  const getNetworkName = (chainId?: number) => {
-    const network = getAllowedNetworks().find((net) => net.id === chainId);
-    return network?.name || "Not Connected";
   };
 
   const renderGameContent = () => {
@@ -231,7 +197,7 @@ function SinglePlayerGame() {
       <div className="min-h-screen bg-[#FFFFFF] text-[#24272A]">
         <Toaster />
         {/* Header */}
-        <Header getNetworkName={getNetworkName} />
+        <Header />
 
         {/* Game Area */}
         <main className="container mx-auto px-4 py-16 text-center">

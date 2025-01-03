@@ -1,8 +1,6 @@
-import Oracle from "./Oracle";
-import Relayer from "./Relayer";
 import { WalletConnection } from "./WalletConnection";
 
-export function Header({ getNetworkName }: { getNetworkName: () => string }) {
+export function Header() {
   return (
     <header className="p-6 flex justify-between items-center bg-white shadow-md">
       <h1 className="text-2xl font-bold text-[#24272A] flex items-center gap-2">
@@ -11,7 +9,7 @@ export function Header({ getNetworkName }: { getNetworkName: () => string }) {
         </a>
         Cross-Chain RPS
       </h1>
-      <WalletConnection getNetworkName={getNetworkName} />
+      <WalletConnection />
     </header>
   );
 }

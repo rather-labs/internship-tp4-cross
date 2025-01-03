@@ -1,5 +1,5 @@
 "use client";
-import { useAccount, useBlockNumber, useConfig } from "wagmi";
+import { useAccount, useBlockNumber, useConfig, useSwitchChain } from "wagmi";
 import { writeContract } from "@wagmi/core";
 import {
   CONTRACT_ABIS,
@@ -21,6 +21,8 @@ export default function OracleButton() {
 
   const { state: chainData, dispatch } = useChainData();
 
+  const { switchChain, isPending: switchChainIsPending } = useSwitchChain();
+
   let config = useConfig();
 
   const [errorWriteBlock, setErrorWriteBlock] = useState("");
@@ -35,7 +37,13 @@ export default function OracleButton() {
     watch: true,
   });
 
-  const { setIsOracleCalled, finalitySpeed, moveBlockNumber } = useGame();
+  const {
+    setIsOracleCalled,
+    finalitySpeed,
+    moveBlockNumber,
+    blockchains,
+    moveNumber,
+  } = useGame();
   const [isEnabled, setIsEnabled] = useState(false);
   const [blocksRemaining, setBlocksRemaining] = useState<number | null>(null);
 
@@ -159,6 +167,19 @@ export default function OracleButton() {
             </p>
           )}
         </div>
+      )}
+
+      {/* Switch Network Button */}
+      {chainId != (blockchains[moveNumber % 2] ?? 0) && (
+        <button
+          className="px-8 py-4 rounded-xl text-xl font-bold transition-all transform hover:scale-105 shadow-lg text-white bg-[#F6851B] hover:bg-[#E2761B]"
+          onClick={() =>
+            switchChain({ chainId: blockchains[moveNumber % 2] ?? 0 })
+          }
+          disabled={switchChainIsPending}
+        >
+          Switch network to: {blockchains[moveNumber % 2] ?? 0}
+        </button>
       )}
 
       {/* Oracle button */}
