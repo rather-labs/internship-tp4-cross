@@ -19,41 +19,6 @@ function App() {
     (connector) => connector.name === "MetaMask"
   ) as (typeof connectors)[number];
 
-  const getAllowedNetworks = () => [
-    { id: 1, name: "Ethereum" },
-    { id: 17000, name: "Holesky" },
-    { id: 11155111, name: "Sepolia" },
-    { id: 56, name: "BSC" },
-    { id: 97, name: "BSC Testnet" },
-    { id: 31337, name: "Localhost" },
-    { id: 31338, name: "Localhost2" },
-  ];
-
-  useEffect(() => {
-    if (chainId) {
-      const network = getAllowedNetworks().find((net) => net.id === chainId);
-      if (!network) {
-        const errorMsg = `Network not supported. Please switch to one of: ${getAllowedNetworks()
-          .map((net) => net.name)
-          .join(", ")}`;
-        toast.error(errorMsg, {
-          duration: 5000,
-          position: "top-center",
-          style: {
-            background: "#FEE2E2",
-            color: "#991B1B",
-            border: "1px solid #F87171",
-          },
-        });
-        disconnect();
-      }
-    }
-  }, [chainId, disconnect]);
-
-  const getNetworkName = (chainId?: number) => {
-    const network = getAllowedNetworks().find((net) => net.id === chainId);
-    return network?.name || "Not Connected";
-  };
 
   const renderGameButton = () => {
     if (!playerCount) {
@@ -134,7 +99,7 @@ function App() {
     <div className="min-h-screen bg-[#FFFFFF] text-[#24272A]">
       <Toaster />
       {/* Header */}
-      <Header getNetworkName={getNetworkName} />
+      <Header/>
 
       {/* Hero Section */}
       <main className="container mx-auto px-4 py-16 text-center">
