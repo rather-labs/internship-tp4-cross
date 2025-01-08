@@ -54,7 +54,7 @@ export function WalletConnection() {
               className="w-6 h-6"
             />
             <span>
-              Network:{CHAIN_NAMES[chainId as keyof typeof CHAIN_NAMES]}
+              Network: {CHAIN_NAMES[chainId as keyof typeof CHAIN_NAMES]}
             </span>
           </div>
         </div>
