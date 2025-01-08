@@ -40,12 +40,9 @@ export default function Oracle() {
       chainId: chainId,
       blockNumber: Number(blockNumber),
     });
-    console.log("Oracle: blockNumber", blockNumber);
-    console.log(chainData);
   }, [blockNumber]);
 
   const handleEmitMsg = async (log: any) => {
-    console.log("Oracle: handleEmitMsg");
     // Store receipt trie root in local storage
     const Block = await getBlock(config, {
       blockNumber: log.blockNumber,

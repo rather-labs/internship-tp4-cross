@@ -55,7 +55,7 @@ function App() {
         {playerCount === 1 ? (
           <div className="ml-6 flex items-center justify-center gap-2">
             <button
-              className="bg-[#037DD6] hover:bg-[#0260A4] text-white px-8 py-4 rounded-xl text-xl font-bold transition-all transform hover:scale-105 shadow-lg"
+              className="bg-[#F6851B] hover:bg-[#E2761B] text-white px-8 py-4 rounded-xl text-xl font-bold transition-all transform hover:scale-105 shadow-lg"
               onClick={() => router.push("/game/single-player")}
             >
               Start Single Player Game

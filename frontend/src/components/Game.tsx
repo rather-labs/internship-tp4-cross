@@ -27,7 +27,6 @@ export function Game({
     try {
       // Get the latest block number directly if the hook hasn't updated
       const latestBlock = blockNumber;
-      console.log("Block number:", latestBlock);
       setMoveBlockNumber(Number(latestBlock));
     } catch (error) {
       console.error("Error getting block number:", error);

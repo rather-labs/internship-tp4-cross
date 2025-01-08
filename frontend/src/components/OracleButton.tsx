@@ -21,7 +21,7 @@ export default function OracleButton() {
 
   const { state: chainData, dispatch } = useChainData();
 
-  const { switchChain, isPending: switchChainIsPending } = useSwitchChain();
+  const { switchChain, isPending: switchChainIsPending, isSuccess: switchChainIsSuccess} = useSwitchChain();
 
   let config = useConfig();
 
@@ -65,7 +65,6 @@ export default function OracleButton() {
   }, [blockNumber, moveBlockNumber, requiredBlocks]);
 
   const handleInboundBlockNumbers = async () => {
-    console.log("Oracle: handleInboundBlockNumbers");
     for (const chain of SUPPORTED_CHAINS) {
       if (chain === chainId || chainData[chain] === undefined) continue;
       setErrorWriteBlock("");
@@ -91,7 +90,6 @@ export default function OracleButton() {
   };
 
   const handleInboundReceiptTrie = async () => {
-    console.log("Oracle: handleInboundReceiptTrie");
     if (
       chainId === undefined ||
       chainData[chainId] === undefined ||
@@ -156,13 +154,13 @@ export default function OracleButton() {
               </p>
               <p className="text-sm text-gray-500">
                 {finalitySpeed === "FAST"
-                  ? "Fast mode requires 2 block confirmations"
-                  : "Slow mode requires 5 block confirmations"}
+                  ? "Fast mode requires 2 block confirmations, please wait..."
+                  : "Slow mode requires 5 block confirmations, please wait..."}
               </p>
             </>
           ) : (
             <p className="text-lg font-semibold text-green-600">
-              Countdown finished, you can now call the oracle to submit the
+              Countdown finished, you can now Switch Network and Call the Oracle to submit the
               information.
             </p>
           )}
@@ -171,40 +169,65 @@ export default function OracleButton() {
 
       {/* Switch Network Button */}
       {chainId != (blockchains[moveNumber % 2] ?? 0) && (
-        <button
-          className="px-8 py-4 rounded-xl text-xl font-bold transition-all transform hover:scale-105 shadow-lg text-white bg-[#F6851B] hover:bg-[#E2761B]"
-          onClick={() =>
-            switchChain({ chainId: blockchains[moveNumber % 2] ?? 0 })
-          }
-          disabled={switchChainIsPending}
-        >
-          Switch network to: {blockchains[moveNumber % 2] ?? 0}
-        </button>
+        <div className="flex items-center justify-center gap-4">
+          <button
+            className={`px-8 py-4 rounded-xl text-xl font-bold transition-all transform hover:scale-105 shadow-lg text-white ${
+              switchChainIsSuccess || (blocksRemaining! > 0)
+                ? "bg-gray-400 cursor-not-allowed"
+                : "bg-[#F6851B] hover:bg-[#E2761B]"
+            }`}
+            onClick={() =>{
+                switchChain({ chainId: blockchains[moveNumber % 2] ?? 0 });
+              }
+            }
+            disabled={switchChainIsPending || switchChainIsSuccess}
+          >
+            {!switchChainIsSuccess || (blocksRemaining! > 0) ? 
+              (`Switch network to: ${blockchains[moveNumber % 2] ?? 0}`) :
+                switchChainIsPending ?
+                ("Please Wait...") : ("Done")
+            }
+          </button>
+          <Tooltip
+              content="The next step is to call the Relayer to push our move to the destination blockchain. Let's go!"
+              link={{
+                href: "https://docs.axsdasdsadsadelar.dev/",
+                text: "Learn More",
+              }}
+          />
+        </div>
       )}
 
       {/* Oracle button */}
       {!isSuccessWriteBlock && !isSuccessWriteInReceipt && (
-        <button
-          className={`px-8 py-4 rounded-xl text-xl font-bold transition-all transform hover:scale-105 shadow-lg text-white ${
-            isEnabled
-              ? "bg-[#F6851B] hover:bg-[#E2761B]"
-              : "bg-gray-400 cursor-not-allowed"
-          }`}
-          onClick={handleOracleCall}
-          disabled={
-            !isEnabled || isPendingWriteBlock || isPendingWriteInReceipt
-          }
-        >
-          {isPendingWriteBlock || isPendingWriteInReceipt ? (
-            <div className="flex justify-center">
-              <div className="animate-spin rounded-full h-6 w-6 border-b-2 border-white"></div>
-            </div>
-          ) : isEnabled ? (
-            "Call Oracle"
-          ) : (
-            "Please Wait..."
-          )}
-        </button>
+        <div className="flex items-center justify-center gap-4">
+          <button
+            className={`px-8 py-4 rounded-xl text-xl font-bold transition-all transform hover:scale-105 shadow-lg text-white ${
+              isEnabled && switchChainIsSuccess
+                ? "bg-[#F6851B] hover:bg-[#E2761B]"
+                : "bg-gray-400 cursor-not-allowed"
+            }`}
+            onClick={handleOracleCall}
+            disabled={
+              !isEnabled || isPendingWriteBlock || isPendingWriteInReceipt || switchChainIsPending || !switchChainIsSuccess
+            }
+          >
+            {isPendingWriteBlock || isPendingWriteInReceipt ? (
+              <div className="flex justify-center">
+                <div className="animate-spin rounded-full h-6 w-6 border-b-2 border-white"></div>
+              </div>
+            ) :  (
+              "Call Oracle"
+            )}
+          </button>
+          <Tooltip
+              content="The next step is to call the Relayer to push our move to the destination blockchain. Let's go!"
+              link={{
+                href: "https://docs.axsdasdsadsadelar.dev/",
+                text: "Learn More",
+              }}
+          />
+        </div>
       )}
 
       {(errorWriteBlock || errorWriteInReceipt) && (
@@ -223,10 +246,10 @@ export default function OracleButton() {
               className="bg-[#F6851B] hover:bg-[#E2761B] px-8 py-4 rounded-xl text-xl font-bold transition-all transform hover:scale-105 shadow-lg text-white"
               onClick={() => setIsOracleCalled(true)}
             >
-              Relay Message Now
+              Continue
             </button>
             <Tooltip
-              content="The speed configuration determines the number of blocks the oracle will wait until sending the message receipt trie. If we select to wait more blocks we will have to wait longer but we will not risk having a chain reordering event that removes our message from the source chain."
+              content="The next step is to call the Relayer to push our move to the destination blockchain. Let's go!"
               link={{
                 href: "https://docs.axsdasdsadsadelar.dev/",
                 text: "Learn More",

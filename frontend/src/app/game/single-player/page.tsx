@@ -20,6 +20,7 @@ import {
 import { writeContract } from "@wagmi/core";
 import { waitForTransactionReceipt } from "wagmi/actions";
 import { Tooltip } from "@/components/Tooltip";
+import { CallRelayer } from "@/components/CallRelayer";
 
 const moveToNumber: { [key: string]: number } = {
   Rock: 1,
@@ -125,6 +126,9 @@ function SinglePlayerGame() {
       if (!isOracleCalled) {
         return <CallOracle />;
       }
+      if (isOracleCalled) {
+        return <CallRelayer />;
+      }
       return (
         <Transition
           handleNextTurn={handleNextTurn}
@@ -183,7 +187,7 @@ function SinglePlayerGame() {
             )}
             {isPendingGameMove && (
               <div className="mt-4 p-4 bg-blue-100 border border-blue-400 text-blue-700 rounded">
-                Submitting move to blockchain...
+                Please wait until the move transaction is confirmed...
               </div>
             )}
           </>

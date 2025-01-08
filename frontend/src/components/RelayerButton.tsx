@@ -184,7 +184,7 @@ export default function RelayerButton() {
     <div className="p-4 rounded-lg bg-[#ffffff]">
       <div className="flex flex-col space-y-4">
         <button
-          className="bg-[#037DD6] hover:bg-[#0260A4] px-8 py-4 rounded-xl text-xl font-bold transition-all transform hover:scale-105 shadow-lg"
+          className="bg-[#F6851B] hover:bg-[#E2761B] px-8 py-4 rounded-xl text-xl text-white font-bold transition-all transform hover:scale-105 shadow-lg"
           onClick={() => handleInboundMsgs()}
           disabled={inboundingMsgs}
         >
@@ -193,9 +193,12 @@ export default function RelayerButton() {
               <div className="animate-spin rounded-full h-6 w-6 border-b-2 border-white"></div>
             </div>
           ) : (
-            "Inbound messages that have reached finality"
+            "Call Relayer"
           )}
         </button>
+        <p className="text-sm text-gray-500">
+                This action will manually push the messages that have reached finality, as if it was a Relayer.
+        </p>
         {writeError && (
           <div className="p-4 bg-red-100 border border-red-400 text-red-700 rounded">
             Error: {writeError}

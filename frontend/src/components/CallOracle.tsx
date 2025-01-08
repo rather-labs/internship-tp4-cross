@@ -1,6 +1,5 @@
 import { useGame } from "@/contexts/GameContext";
 import OracleButton from "./OracleButton";
-import { Tooltip } from "./Tooltip";
 
 export function CallOracle() {
   const { finalitySpeed, moveBlockNumber } = useGame();
@@ -15,9 +14,9 @@ export function CallOracle() {
             The Oracle will push the Finality Block Number and Receipt Trie to
             the destination communication contract. This information will be
             used to verify the authenticity of the incoming message, as well as
-            to verify finality.
+            to verify finality. Before calling the Oracle we need to first change the network to the destination one, and then wait the number of blocks for the desired finality.
           </p>
-          <p className="text-xl mb-4">Selected Speed: {finalitySpeed}</p>
+          <p className="text-xl mt-4">Selected Speed: {finalitySpeed}</p>
           <p className="text-xl mb-4">
             {moveBlockNumber !== null
               ? `Block where the move was included: ${moveBlockNumber}`
