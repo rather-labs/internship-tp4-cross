@@ -35,6 +35,8 @@ export default function Oracle() {
 
   useEffect(() => {
     if (blockNumber === undefined || chainId === undefined) return;
+    console.log("Oracle: blockNumber ", blockNumber, " | chainId ", chainId);
+    console.log("ChainData ", chainData);
     dispatch({
       type: "UPDATE_BLOCK_NUMBER",
       chainId: chainId,
@@ -43,6 +45,7 @@ export default function Oracle() {
   }, [blockNumber]);
 
   const handleEmitMsg = async (log: any) => {
+    console.log("Oracle: handleEmitMsg", " | chainId ", chainId);
     // Store receipt trie root in local storage
     const Block = await getBlock(config, {
       blockNumber: log.blockNumber,

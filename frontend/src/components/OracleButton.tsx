@@ -21,7 +21,11 @@ export default function OracleButton() {
 
   const { state: chainData, dispatch } = useChainData();
 
-  const { switchChain, isPending: switchChainIsPending, isSuccess: switchChainIsSuccess} = useSwitchChain();
+  const {
+    switchChain,
+    isPending: switchChainIsPending,
+    isSuccess: switchChainIsSuccess,
+  } = useSwitchChain();
 
   let config = useConfig();
 
@@ -160,8 +164,8 @@ export default function OracleButton() {
             </>
           ) : (
             <p className="text-lg font-semibold text-green-600">
-              Countdown finished, you can now Switch Network and Call the Oracle to submit the
-              information.
+              Countdown finished, you can now Switch Network and Call the Oracle
+              to submit the information.
             </p>
           )}
         </div>
@@ -172,28 +176,27 @@ export default function OracleButton() {
         <div className="flex items-center justify-center gap-4">
           <button
             className={`px-8 py-4 rounded-xl text-xl font-bold transition-all transform hover:scale-105 shadow-lg text-white ${
-              switchChainIsSuccess || (blocksRemaining! > 0)
+              switchChainIsSuccess || blocksRemaining! > 0
                 ? "bg-gray-400 cursor-not-allowed"
                 : "bg-[#F6851B] hover:bg-[#E2761B]"
             }`}
-            onClick={() =>{
-                switchChain({ chainId: blockchains[moveNumber % 2] ?? 0 });
-              }
-            }
+            onClick={() => {
+              switchChain({ chainId: blockchains[moveNumber % 2] ?? 0 });
+            }}
             disabled={switchChainIsPending || switchChainIsSuccess}
           >
-            {!switchChainIsSuccess || (blocksRemaining! > 0) ? 
-              (`Switch network to: ${blockchains[moveNumber % 2] ?? 0}`) :
-                switchChainIsPending ?
-                ("Please Wait...") : ("Done")
-            }
+            {!switchChainIsSuccess || blocksRemaining! > 0
+              ? `Switch network to: ${blockchains[moveNumber % 2] ?? 0}`
+              : switchChainIsPending
+                ? "Please Wait..."
+                : "Done"}
           </button>
           <Tooltip
-              content="The next step is to call the Relayer to push our move to the destination blockchain. Let's go!"
-              link={{
-                href: "https://docs.axsdasdsadsadelar.dev/",
-                text: "Learn More",
-              }}
+            content="The next step is to call the Relayer to push our move to the destination blockchain. Let's go!"
+            link={{
+              href: "https://docs.axsdasdsadsadelar.dev/",
+              text: "Learn More",
+            }}
           />
         </div>
       )}
@@ -209,23 +212,27 @@ export default function OracleButton() {
             }`}
             onClick={handleOracleCall}
             disabled={
-              !isEnabled || isPendingWriteBlock || isPendingWriteInReceipt || switchChainIsPending || !switchChainIsSuccess
+              !isEnabled ||
+              isPendingWriteBlock ||
+              isPendingWriteInReceipt ||
+              switchChainIsPending ||
+              !switchChainIsSuccess
             }
           >
             {isPendingWriteBlock || isPendingWriteInReceipt ? (
               <div className="flex justify-center">
                 <div className="animate-spin rounded-full h-6 w-6 border-b-2 border-white"></div>
               </div>
-            ) :  (
+            ) : (
               "Call Oracle"
             )}
           </button>
           <Tooltip
-              content="The next step is to call the Relayer to push our move to the destination blockchain. Let's go!"
-              link={{
-                href: "https://docs.axsdasdsadsadelar.dev/",
-                text: "Learn More",
-              }}
+            content="The next step is to call the Relayer to push our move to the destination blockchain. Let's go!"
+            link={{
+              href: "https://docs.axsdasdsadsadelar.dev/",
+              text: "Learn More",
+            }}
           />
         </div>
       )}

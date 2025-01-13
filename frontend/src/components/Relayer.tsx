@@ -105,7 +105,7 @@ export default function Relayer() {
   }
 
   const handleEmitMsg = async (log: any) => {
-    console.log("Relayer: handleEmitMsg");
+    console.log("Relayer: handleEmitMsg", " | chainId ", chainId);
     const outMsg: msgRelayer = {
       blockNumber: Number(log.blockNumber),
       finalityBlock: Number(log.blockNumber) + Number(log.args.finalityNBlocks),
@@ -143,7 +143,7 @@ export default function Relayer() {
   };
 
   const handleMsgDelivered = async (log: any) => {
-    console.log("Relayer: handleMsgDelivered");
+    console.log("Relayer: handleMsgDelivered", " | chainId ", chainId);
     // Remove delivered messages from chainData
     for (const [index, msgNumber] of log.args.inboundMessageNumbers.entries()) {
       if (
@@ -167,7 +167,12 @@ export default function Relayer() {
     eventName: "InboundMessagesRes",
     pollingInterval: 10_000,
     onLogs(logs: any) {
-      console.log("Received InboundMessagesRes logs:", logs);
+      console.log(
+        "Received InboundMessagesRes logs on chainId ",
+        chainId,
+        ":",
+        logs
+      );
       handleMsgDelivered(logs[0]);
     },
   });

@@ -113,8 +113,7 @@ export default function RelayerButton() {
   }
 
   const handleInboundMsgs = async () => {
-    console.log("Relayer: handleInboundMsgs");
-    setInboundingMsgs(true);
+    console.log("Relayer: handleInboundMsgs", " | chainId ", chainId);
     setWriteError("");
     for (const chain of SUPPORTED_CHAINS) {
       if (
@@ -140,11 +139,12 @@ export default function RelayerButton() {
         },
         [[], [], []] as [msgReceipt[], Hex[][], number[]]
       );
-      console.log("receipts", receipts);
-      console.log("blockNumbers", blockNumbers);
+      console.log("receipts", receipts, " | chainId ", chainId);
+      console.log("blockNumbers", blockNumbers, " | chainId ", chainId);
       if (receipts.length == 0) {
         continue;
       }
+      setInboundingMsgs(true);
       try {
         setIsSuccess(false);
         const txHash = await writeContract(config, {
@@ -197,7 +197,8 @@ export default function RelayerButton() {
           )}
         </button>
         <p className="text-sm text-gray-500">
-                This action will manually push the messages that have reached finality, as if it was a Relayer.
+          This action will manually push the messages that have reached
+          finality, as if it was a Relayer.
         </p>
         {writeError && (
           <div className="p-4 bg-red-100 border border-red-400 text-red-700 rounded">
