@@ -94,39 +94,49 @@ export default function OracleButton() {
   };
 
   const handleInboundReceiptTrie = async () => {
-    if (
-      chainId === undefined ||
-      chainData[chainId] === undefined ||
-      chainData[chainId].receiptTrieRoots === undefined
-    )
-      return;
-    for (const receipt of chainData[chainId].receiptTrieRoots) {
-      setErrorWriteInReceipt("");
-      setPendingWriteInReceipt(true);
-      setSuccessWriteInReceipt(false);
-      try {
-        const txHash = await writeContract(config, {
-          address: verificationAddress,
-          abi: JSON.parse(CONTRACT_ABIS["verification"]),
-          functionName: "setRecTrieRoot",
-          args: receipt,
-        });
-        await waitForTransactionReceipt(config, {
-          hash: txHash,
-        });
-        // Remove the inbount root
-        dispatch({
-          type: "REMOVE_RECEIPT_TRIE_ROOT",
-          chainId,
-          sourceId: receipt[0],
-          blockNumber: receipt[1],
-        });
+    try {
+      if (
+        chainId === undefined ||
+        chainData[chainId] === undefined ||
+        chainData[chainId].receiptTrieRoots === undefined
+      ) throw new Error("Undefined Chain Id");
+
+      for (const receipt of chainData[chainId].receiptTrieRoots) {
+        setErrorWriteInReceipt("");
+        setPendingWriteInReceipt(true);
+        setSuccessWriteInReceipt(false);
+        try {
+          const txHash = await writeContract(config, {
+            address: verificationAddress,
+            abi: JSON.parse(CONTRACT_ABIS["verification"]),
+            functionName: "setRecTrieRoot",
+            args: receipt,
+          });
+          
+          const txReceipt = await waitForTransactionReceipt(config, {
+            hash: txHash,
+          });
+          if (txReceipt.status === 'reverted') throw new Error("Transaction Recepit status returned as reverted");
+        
+          // Remove the sent root
+          dispatch({
+            type: "REMOVE_RECEIPT_TRIE_ROOT",
+            chainId,
+            sourceId: receipt[0],
+            blockNumber: receipt[1],
+          });
+          console.log("Contract written successfully");
+          
+        } catch (error: any) {
+          console.error("Error setting receipt trie root:", error);
+          setErrorWriteInReceipt(error.message);
+        }
+        setPendingWriteInReceipt(false);
         setSuccessWriteInReceipt(true);
-      } catch (error: any) {
-        console.error("Error setting receipt trie root:", error);
-        setErrorWriteInReceipt(error.message);
+        console.log("kk");
       }
-      setPendingWriteInReceipt(false);
+    } catch(error) {
+      console.error("Error handling Inbound Receipt Trie", error);
     }
   };
 
@@ -137,9 +147,13 @@ export default function OracleButton() {
 
   const handleOracleCall = async () => {
     try {
+      console.log("handleInboundReceiptTrie called...");
       await handleInboundReceiptTrie();
+      console.log("isSuccessWriteInReceipt: " , isSuccessWriteInReceipt);
+      if (isSuccessWriteInReceipt == false) throw new Error("Trying to call inboud block numbers but still writeInReceipt is not successfull");
+      console.log("handleInboundBlockNumbers called...");
       await handleInboundBlockNumbers();
-    } catch (error) {
+    }catch (error) {
       console.error("Error calling oracle:", error);
     }
   };
