@@ -7,6 +7,8 @@ const { createPublicClient,
       } = require('viem');
 const { privateKeyToAccount } = require('viem/accounts');
 const { mainnet, bsc, bscTestnet, hardhat, sepolia, holesky } = require('viem/chains');
+const { parseEther } = require('viem');
+
 
 // create a WebSocket transport for developement using local hardhat chain
 const ENDPOINTS = {
@@ -86,37 +88,59 @@ async function callFunction(
   address, 
   abi, 
   functionName, 
-  args
+  args,
+  overrides={},
+  maxAttempts = 5 // Number of attempts
 ){    
-  const { request } = await publicClient.simulateContract({
-    address,
-    abi,
-    functionName,
-    args,
-    account
-  })
-  await walletClient.writeContract(request)
+  let attempt = 0;
+  while (attempt < maxAttempts) {
+    try {
+      attempt++;
+      const feeData = await publicClient.estimateFeesPerGas();
+      const { request } = await publicClient.simulateContract({
+        address,
+        abi,
+        functionName,
+        args,
+        account,
+        maxFeePerGas: feeData.maxFeePerGas,
+        maxPriorityFeePerGas: feeData.maxPriorityFeePerGas,
+        overrides
+      })
+      await walletClient.writeContract(request)
+      return;
+    } catch (error) {
+      if (attempt === maxAttempts) {
+         console.error('Transaction failed after ${maxAttempts} attempts:', error);
+      }
+      await new Promise((resolve) => setTimeout(resolve, 500)); // Waits for 0.5 seconds before retry
+    }
+  }  
 }
 
 // Function to listen for contract events in a specific block
-function listenForContractEvents(client, address, event, contractABI, handleNewEvent, data) {
+async function listenForContractEvents(client, address, event, contractABI, handleNewEvent, data) {
     // Get logs for the contract event
-    client.watchEvent({ address, event:parseAbiItem(event),
-        onLogs: logs => {
-            logs.forEach((log) => {
+    await client.watchEvent({ address, event:parseAbiItem(event),
+        onLogs: async logs => {
+            for (const log of logs) {
+              try {
                 // Parse the event log based on your contract ABI
                 const decoded = decodeEventLog({
                   abi: contractABI,
                   data: log.data,
                   topics: log.topics,
                 });
-                handleNewEvent(log, decoded, data)
-            })
+                await handleNewEvent(log, decoded, data)
+              } catch (error) {
+                console.error("Error decoding or handling event:", error);
+              }
+            }
         }
     })
 };
 // Function to listen for contract events in a specific block
-function listenForContractEventsInBlock(
+async function listenForContractEventsInBlock(
             client, address, event, contractABI, 
             blockNumber, 
             handleNewEvent, data) {
@@ -128,28 +152,37 @@ function listenForContractEventsInBlock(
     };
 
     // Get logs for the contract event
-    client.getLogs(eventFilter).then((logs) => {
-      logs.forEach((log) => {
-        // Parse the event log based on your contract ABI
-        const decoded = decodeEventLog({
-          abi: contractABI,
-          data: log.data,
-          topics: log.topics,
-        });
-        handleNewEvent(log, decoded, data)
+    await client.getLogs(eventFilter)
+    .then(async (logs) => {
+      // Create an array of promises to handle logs concurrently
+      const logPromises = logs.map(async (log) => {
+        try {
+          // Decode the event log based on your contract ABI
+          const decoded = decodeEventLog({
+            abi: contractABI,
+            data: log.data,
+            topics: log.topics,
+          });
+  
+          // Process the log asynchronously
+          await handleNewEvent(log, decoded, data);
+        } catch (error) {
+          console.error('Error processing log:', error);
+        }
       });
-    }).catch((error) => {
-      console.error('Error fetching logs for block:', error);
+  
+      // Wait for all logs to be processed concurrently
+      await Promise.all(logPromises);
+    })
+    .catch((error) => {
+      console.error('Error fetching logs:', error);
     });
 };
+
 // Listen for new blocks
-function listenForNewBlocks(client, handleBlockNumber, data, opts={}) {
-    const { address=null, event='', contractABI = []} = opts;
-    client.watchBlockNumber({onBlockNumber: blockNumber => {
-      handleBlockNumber(blockNumber, data)
-      if (address) {
-        listenForContractEventsInBlock(client, address, event, contractABI, blockNumber)
-      }
+async function listenForNewBlocks(client, handleBlockNumber, data) {
+    await client.watchBlockNumber({onBlockNumber: async blockNumber => {
+      await handleBlockNumber(blockNumber, data)
     }
 });
 };
