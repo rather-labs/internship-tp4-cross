@@ -23,7 +23,7 @@ function App() {
   const renderGameButton = () => {
     if (!playerCount) {
       return (
-        <div className="space-y-6">
+        <div className="space-y-6 mt-8">
           <div className="flex gap-8 justify-center">
             <button
               className="bg-[#037DD6] hover:bg-[#0260A4] text-white px-8 py-4 rounded-xl text-xl font-bold transition-all transform hover:scale-105 shadow-lg"
@@ -45,13 +45,13 @@ function App() {
               </div>
             </div>
           </div>
-          <p className="text-[#BBC0C5]">Please select game mode</p>
+          <p className="text-[#BBC0C5]">Please select the game mode to start the game</p>
         </div>
       );
     }
 
     return (
-      <div className="space-y-4">
+      <div className="space-y-4 mt-8">
         {playerCount === 1 ? (
           <div className="ml-6 flex items-center justify-center gap-2">
             <button
@@ -109,15 +109,25 @@ function App() {
             <br />
             <span className="text-[#037DD6]">Across Blockchains</span>
           </h2>
-          <p className="text-xl text-[#6A737D] mb-8 max-w-2xl mx-auto">
-            Challenge players from different blockchain networks in this classic
-            game.
-          </p>
-
+          <>
+            <p className="text-xl text-[#6A737D] max-w-2xl mx-auto text-justify">
+              This game app is a proof of concept for R-Cross, a cross-chain communication protocol
+              developed by Rather Labs Innovation Department. <br/>
+              This protocol can be used to send arbitrary 
+              data across two different blockchains, utilizing a proof of inclusion strategy 
+              to assure the authenticity and integrity of the message. Here we use it to play rock-paper-scissor across blockchains.
+            </p>
+            <a
+              href={"kk"}
+              className="text-[#037DD6] hover:text-[#0260A4]"
+            >
+              Learn More
+            </a>
+          </>
           {account.status === ("connected" as const) ? (
             renderGameButton()
           ) : (
-            <div className="space-y-4">
+            <div className="space-y-4 mt-8">
               <button
                 className="bg-[#F6851B] hover:bg-[#E2761B] px-8 py-4 rounded-xl text-xl font-bold transition-all transform hover:scale-105 shadow-lg text-white disabled:opacity-50 disabled:cursor-not-allowed"
                 onClick={() => connect({ connector: metamaskConnector })}

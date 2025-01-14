@@ -60,9 +60,8 @@ export function Game({
 
       <div className="flex items-center gap-2">
         <p className="text-[#6A737D] text-lg">
-          Once you select your move, you will be prompted to sign a transaction
-          with your wallet. Then, your move will be sent cross-chain to the
-          other player.
+          In this step, you play rock-paper-scissors as Player {currentPlayer}. You now need to select your game move. Once you select your move, you will be prompted to sign a transaction
+          with your wallet. Then, your move will be transmitted cross-chain using the cross communication protocol in the next step.
         </p>
         <Tooltip
           content="We use a secure cross-chain communication protocol to safely transmit your move between different blockchains while maintaining game integrity."

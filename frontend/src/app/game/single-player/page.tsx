@@ -143,10 +143,13 @@ function SinglePlayerGame() {
           <div className="space-y-6">
             <div className="border-2 border-gray-300 bg-white shadow-lg p-6 rounded-xl">
               <p className="text-xl mb-4">Choose Transaction Finality Speed</p>
-              <p className="text-sm text-gray-600">
+              <p className="text-m text-gray-600">
+                The first parameter we need to define is the amount of blocks we want to wait to ensure <a href="https://example.com/finality" className="text-blue-500 underline">finality</a>  for the source blockchain. We simplified this down to two choices.
+              </p>
+              <p className="text-m text-gray-600">
                 Fast: Wait less blocks, quicker finality, less confidence
                 <br />
-                Slow: Wait more, slower finality, more confidence
+                Slow: Wait more blocks, slower finality, more confidence
               </p>
             </div>
 
@@ -164,7 +167,7 @@ function SinglePlayerGame() {
                 Slow 🐢
               </button>
               <Tooltip
-                content="The speed configuration determines the number of blocks the oracle will wait until sending the message receipt trie. If we select to wait more blocks we will have to wait longer but we will not risk having a chain reordering event that removes our message from the source chain."
+                content="The speed configuration determines the number of blocks the oracle will wait until sending the message receipt trie. If we select to wait more blocks we will have to wait longer but we will not risk having a chain reordering event that removes our message from the source chain. The number of blocks for each speed is different for each blockchian and can be consulted on the documentation."
                 link={{
                   href: "https://docs.axelar.dev/",
                   text: "Learn More",
