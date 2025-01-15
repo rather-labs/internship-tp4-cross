@@ -32,7 +32,6 @@ function SinglePlayerGame() {
   const router = useRouter();
   const account = useAccount();
   let config = useConfig();
-  const { disconnect } = useDisconnect();
   const [currentPlayer, setCurrentPlayer] = useState<1 | 2>(1);
   const [gameState, setGameState] = useState<
     "WAITING" | "PLAYING" | "TRANSITION"
@@ -144,7 +143,16 @@ function SinglePlayerGame() {
             <div className="border-2 border-gray-300 bg-white shadow-lg p-6 rounded-xl">
               <p className="text-xl mb-4">Choose Transaction Finality Speed</p>
               <p className="text-m text-gray-600">
-                The first parameter we need to define is the amount of blocks we want to wait to ensure <a href="https://example.com/finality" className="text-blue-500 underline">finality</a>  for the source blockchain. We simplified this down to two choices.
+                The first parameter we need to define is the amount of blocks we
+                want to wait to ensure{" "}
+                <a
+                  href="https://example.com/finality"
+                  className="text-blue-500 underline"
+                >
+                  finality
+                </a>{" "}
+                for the source blockchain. We simplified this down to two
+                choices.
               </p>
               <p className="text-m text-gray-600">
                 Fast: Wait less blocks, quicker finality, less confidence

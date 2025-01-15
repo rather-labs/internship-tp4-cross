@@ -10,22 +10,9 @@ import {
   msgReceipt,
 } from "../utils/ContractInfo"; //
 import React, { useState } from "react";
-import { Address, Hex, toHex } from "viem";
-import {
-  getBlock,
-  getTransactionReceipt,
-  waitForTransactionReceipt,
-} from "wagmi/actions";
+import { Address, Hex } from "viem";
+import { waitForTransactionReceipt } from "wagmi/actions";
 import { useChainData } from "../contexts/ChainDataContext";
-import {
-  getTrie,
-  getProof,
-  verifyProof,
-  serializeReceipt,
-  txTypes,
-  txStatus,
-} from "@/utils/mpt";
-import { RLP as rlp } from "@ethereumjs/rlp";
 
 const GAS_CONFIG = {
   maxFeePerGas: 100000000000n, // 100 gwei
@@ -37,7 +24,7 @@ const GAS_CONFIG = {
 export default function RelayerButton() {
   const { address: walletAddress, isConnected, chainId } = useAccount();
 
-  const { state: chainData, dispatch } = useChainData();
+  const { state: chainData } = useChainData();
 
   let config = useConfig();
 
@@ -53,75 +40,18 @@ export default function RelayerButton() {
     ] as keyof (typeof CONTRACT_ADDRESSES)["incoming"]
   ] as Address;
 
-  // Get receipts and proofs formatted for on-chain contract
-  async function getReceiptAndProof(message: msgRelayer) {
-    // Get all receipt tries from necesary blocks
-    const Block = await getBlock(config, {
-      blockNumber: BigInt(message.blockNumber),
-    });
-    const totalReceipts = [];
-    for (const txHash of Block.transactions) {
-      const receipt = await getTransactionReceipt(config, {
-        hash: txHash,
-      });
-      totalReceipts.push(receipt);
-    }
-    const trie = await getTrie(totalReceipts);
-
-    // Set proof and receipts as expected by contract
-    const receipt = totalReceipts[message.txIndex];
-
-    const Logs = [];
-    for (const Log of receipt.logs) {
-      const Topics = [];
-      for (const topic of Log.topics) {
-        Topics.push(topic);
-      }
-      Logs.push([Log.address, Topics, Log.data]);
-    }
-    const proof = await getProof(trie, message.txIndex);
-    if (!proof) {
-      console.error(
-        "Inclusion proof not verified for message:",
-        message.number
-      );
-      return [undefined, undefined];
-    }
-    if (
-      toHex(
-        (await verifyProof(proof as Uint8Array[], message.txIndex)) ?? 0
-      ) !== toHex(serializeReceipt(receipt))
-    ) {
-      console.error(
-        "Inclusion proof not verified for message:",
-        message.number
-      );
-      return [undefined, undefined];
-    }
-
-    return [
-      {
-        status: txStatus[receipt.status],
-        cumulativeGasUsed: receipt.cumulativeGasUsed,
-        logsBloom: receipt.logsBloom,
-        logs: Logs,
-        txType: txTypes[receipt.type],
-        rlpEncTxIndex: toHex(rlp.encode(message.txIndex)),
-      } as msgReceipt,
-      proof.map((value: any) => toHex(value)),
-    ];
-  }
-
   const handleInboundMsgs = async () => {
     console.log("Relayer: handleInboundMsgs", " | chainId ", chainId);
     setWriteError("");
+    setInboundingMsgs(true);
     for (const chain of SUPPORTED_CHAINS) {
       if (
         chainId === undefined ||
         chainData[chain] === undefined ||
         chainData[chain].outgoingMsgs === undefined
-      )
+      ) {
         continue;
+      }
       const inboundMsgs = chainData[chain].outgoingMsgs.filter(
         (msg: msgRelayer) =>
           msg.destinationBC == chainId &&
@@ -144,7 +74,6 @@ export default function RelayerButton() {
       if (receipts.length == 0) {
         continue;
       }
-      setInboundingMsgs(true);
       try {
         setIsSuccess(false);
         const txHash = await writeContract(config, {
@@ -171,8 +100,8 @@ export default function RelayerButton() {
         );
         console.error("Error Inbounding messages:", error);
       }
-      setInboundingMsgs(false);
     }
+    setInboundingMsgs(false);
   };
 
   // Only watch for events if we have a valid chainId

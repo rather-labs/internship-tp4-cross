@@ -34,7 +34,9 @@ export default function Oracle() {
   ] as Address;
 
   useEffect(() => {
-    if (blockNumber === undefined || chainId === undefined) return;
+    if (blockNumber === undefined || chainId === undefined) {
+      return;
+    }
     console.log("Oracle: blockNumber ", blockNumber, " | chainId ", chainId);
     console.log("ChainData ", chainData);
     dispatch({
@@ -50,7 +52,9 @@ export default function Oracle() {
     const Block = await getBlock(config, {
       blockNumber: log.blockNumber,
     });
-    if (chainId === undefined) return;
+    if (chainId === undefined) {
+      return;
+    }
     dispatch({
       type: "ADD_RECEIPT_TRIE_ROOT",
       chainId: log.args.destinationBC,

@@ -2,26 +2,17 @@
 
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { type ReactNode, useState } from "react";
-import { type State, WagmiProvider } from "wagmi";
+import { WagmiProvider } from "wagmi";
 
-import { ChainDataProvider } from "../contexts/ChainDataContext";
+import { ChainDataProvider } from "@/contexts/ChainDataContext";
 
-import { getConfig } from "@/wagmi";
-import { cookieToInitialState } from "wagmi";
+import { getConfig } from "@/utils/wagmi";
 
 export function Providers({ children }: { children: ReactNode }) {
-  const [config] = useState(() => {
-    if (typeof window === "undefined") return null; // Return null during SSR
-    return getConfig();
-  });
-
-  const initialState = cookieToInitialState(getConfig(), document.cookie);
-  const [queryClient] = useState(() => new QueryClient());
-
-  if (!config) return null; // Don't render anything during SSR
+  const queryClient = new QueryClient();
 
   return (
-    <WagmiProvider config={config} initialState={initialState}>
+    <WagmiProvider config={getConfig()}>
       <QueryClientProvider client={queryClient}>
         <ChainDataProvider>{children}</ChainDataProvider>
       </QueryClientProvider>

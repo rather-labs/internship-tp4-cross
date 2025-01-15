@@ -1,24 +1,21 @@
 "use client";
 
-import { useAccount, useConnect, useDisconnect } from "wagmi";
-import { useState, useEffect } from "react";
+import { useAccount, useConnect } from "wagmi";
+import { useState } from "react";
 import { useRouter } from "next/navigation";
-import toast, { Toaster } from "react-hot-toast";
+import { Toaster } from "react-hot-toast";
 import { Tooltip } from "@/components/Tooltip";
 import { Header } from "@/components/Header";
 
 function App() {
   const account = useAccount();
   const { connectors, connect } = useConnect();
-  const { disconnect } = useDisconnect();
   const [playerCount, setPlayerCount] = useState<1 | 2 | null>(null);
   const router = useRouter();
-  const chainId = account.chainId;
 
   const metamaskConnector = connectors.find(
     (connector) => connector.name === "MetaMask"
   ) as (typeof connectors)[number];
-
 
   const renderGameButton = () => {
     if (!playerCount) {
@@ -45,7 +42,9 @@ function App() {
               </div>
             </div>
           </div>
-          <p className="text-[#BBC0C5]">Please select the game mode to start the game</p>
+          <p className="text-[#BBC0C5]">
+            Please select the game mode to start the game
+          </p>
         </div>
       );
     }
@@ -99,7 +98,7 @@ function App() {
     <div className="min-h-screen bg-[#FFFFFF] text-[#24272A]">
       <Toaster />
       {/* Header */}
-      <Header/>
+      <Header />
 
       {/* Hero Section */}
       <main className="container mx-auto px-4 py-16 text-center">
@@ -111,16 +110,15 @@ function App() {
           </h2>
           <>
             <p className="text-xl text-[#6A737D] max-w-2xl mx-auto text-justify">
-              This game app is a proof of concept for R-Cross, a cross-chain communication protocol
-              developed by Rather Labs Innovation Department. <br/>
-              This protocol can be used to send arbitrary 
-              data across two different blockchains, utilizing a proof of inclusion strategy 
-              to assure the authenticity and integrity of the message. Here we use it to play rock-paper-scissor across blockchains.
+              This game app is a proof of concept for R-Cross, a cross-chain
+              communication protocol developed by Rather Labs Innovation
+              Department. <br />
+              This protocol can be used to send arbitrary data across two
+              different blockchains, utilizing a proof of inclusion strategy to
+              assure the authenticity and integrity of the message. Here we use
+              it to play rock-paper-scissor across blockchains.
             </p>
-            <a
-              href={"kk"}
-              className="text-[#037DD6] hover:text-[#0260A4]"
-            >
+            <a href={"kk"} className="text-[#037DD6] hover:text-[#0260A4]">
               Learn More
             </a>
           </>

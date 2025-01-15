@@ -6,6 +6,7 @@ import {
   CONTRACT_ADDRESSES,
   CHAIN_NAMES,
   SUPPORTED_CHAINS,
+  BLOCKS_FOR_FINALITY,
 } from "../utils/ContractInfo"; //
 import React, { useEffect, useState } from "react";
 import { Address } from "viem";
@@ -17,17 +18,17 @@ import { Tooltip } from "./Tooltip";
 type ChainAddresses = (typeof CONTRACT_ADDRESSES)["outgoing"];
 
 export default function OracleButton() {
-  const { isConnected, chainId } = useAccount();
+  let config = useConfig();
 
-  const { state: chainData, dispatch } = useChainData();
+  let { isConnected, chainId } = useAccount({ config });
 
   const {
-    switchChain,
+    chains,
+    switchChainAsync: switchChain,
+    error: switchChainError,
     isPending: switchChainIsPending,
     isSuccess: switchChainIsSuccess,
-  } = useSwitchChain();
-
-  let config = useConfig();
+  } = useSwitchChain({ config });
 
   const [errorWriteBlock, setErrorWriteBlock] = useState("");
   const [isPendingWriteBlock, setPendingWriteBlock] = useState(false);
@@ -41,6 +42,8 @@ export default function OracleButton() {
     watch: true,
   });
 
+  const { state: chainData, dispatch } = useChainData();
+
   const {
     setIsOracleCalled,
     finalitySpeed,
@@ -48,29 +51,36 @@ export default function OracleButton() {
     blockchains,
     moveNumber,
   } = useGame();
-  const [isEnabled, setIsEnabled] = useState(false);
-  const [blocksRemaining, setBlocksRemaining] = useState<number | null>(null);
-
-  const requiredBlocks = finalitySpeed === "FAST" ? 3 : 5;
+  const [blocksRemaining, setBlocksRemaining] = useState<number>(1e10);
 
   // Get the correct contract address for the current chain
   const verificationAddress = CONTRACT_ADDRESSES["verification"][
     CHAIN_NAMES[chainId as keyof typeof CHAIN_NAMES] as keyof ChainAddresses
   ] as Address;
-
   useEffect(() => {
-    if (blockNumber === undefined || chainId === undefined) return;
-    if (moveBlockNumber) {
-      const blocksPassed = Number(blockNumber) - Number(moveBlockNumber);
-      const remaining = Math.max(0, requiredBlocks - blocksPassed);
-      setBlocksRemaining(remaining);
-      setIsEnabled(blocksPassed >= requiredBlocks);
+    if (
+      blockNumber === undefined ||
+      chainId === undefined ||
+      chainId == blockchains[moveNumber % 2]
+    ) {
+      return;
     }
-  }, [blockNumber, moveBlockNumber, requiredBlocks]);
+    if (moveBlockNumber) {
+      const remaining = Math.max(
+        0,
+        (finalitySpeed ? BLOCKS_FOR_FINALITY[finalitySpeed] : 0) +
+          Number(moveBlockNumber) -
+          Number(blockNumber)
+      );
+      setBlocksRemaining(remaining);
+    }
+  }, [blockNumber, moveBlockNumber, finalitySpeed]);
 
   const handleInboundBlockNumbers = async () => {
     for (const chain of SUPPORTED_CHAINS) {
-      if (chain === chainId || chainData[chain] === undefined) continue;
+      if (chain === chainId || chainData[chain] === undefined) {
+        continue;
+      }
       setErrorWriteBlock("");
       setPendingWriteBlock(true);
       setSuccessWriteBlock(false);
@@ -94,49 +104,47 @@ export default function OracleButton() {
   };
 
   const handleInboundReceiptTrie = async () => {
-    try {
-      if (
-        chainId === undefined ||
-        chainData[chainId] === undefined ||
-        chainData[chainId].receiptTrieRoots === undefined
-      ) throw new Error("Undefined Chain Id");
+    if (
+      chainId === undefined ||
+      chainData[chainId] === undefined ||
+      chainData[chainId]?.receiptTrieRoots === undefined
+    ) {
+      throw new Error("Undefined Chain Id");
+    }
 
-      for (const receipt of chainData[chainId].receiptTrieRoots) {
-        setErrorWriteInReceipt("");
-        setPendingWriteInReceipt(true);
-        setSuccessWriteInReceipt(false);
-        try {
-          const txHash = await writeContract(config, {
-            address: verificationAddress,
-            abi: JSON.parse(CONTRACT_ABIS["verification"]),
-            functionName: "setRecTrieRoot",
-            args: receipt,
-          });
-          
-          const txReceipt = await waitForTransactionReceipt(config, {
-            hash: txHash,
-          });
-          if (txReceipt.status === 'reverted') throw new Error("Transaction Recepit status returned as reverted");
-        
-          // Remove the sent root
-          dispatch({
-            type: "REMOVE_RECEIPT_TRIE_ROOT",
-            chainId,
-            sourceId: receipt[0],
-            blockNumber: receipt[1],
-          });
-          console.log("Contract written successfully");
-          
-        } catch (error: any) {
-          console.error("Error setting receipt trie root:", error);
-          setErrorWriteInReceipt(error.message);
+    for (const receipt of chainData[chainId].receiptTrieRoots) {
+      setErrorWriteInReceipt("");
+      setPendingWriteInReceipt(true);
+      setSuccessWriteInReceipt(false);
+      try {
+        const txHash = await writeContract(config, {
+          address: verificationAddress,
+          abi: JSON.parse(CONTRACT_ABIS["verification"]),
+          functionName: "setRecTrieRoot",
+          args: receipt,
+        });
+
+        const txReceipt = await waitForTransactionReceipt(config, {
+          hash: txHash,
+        });
+        if (txReceipt.status === "reverted") {
+          throw new Error("Transaction Recepit status returned as reverted");
         }
-        setPendingWriteInReceipt(false);
+
+        // Remove the sent root
+        dispatch({
+          type: "REMOVE_RECEIPT_TRIE_ROOT",
+          chainId,
+          sourceId: receipt[0],
+          blockNumber: receipt[1],
+        });
+        console.log("Contract written successfully");
         setSuccessWriteInReceipt(true);
-        console.log("kk");
+      } catch (error: any) {
+        console.error("Error setting receipt trie root:", error);
+        setErrorWriteInReceipt(error.message);
       }
-    } catch(error) {
-      console.error("Error handling Inbound Receipt Trie", error);
+      setPendingWriteInReceipt(false);
     }
   };
 
@@ -147,13 +155,9 @@ export default function OracleButton() {
 
   const handleOracleCall = async () => {
     try {
-      console.log("handleInboundReceiptTrie called...");
       await handleInboundReceiptTrie();
-      console.log("isSuccessWriteInReceipt: " , isSuccessWriteInReceipt);
-      if (isSuccessWriteInReceipt == false) throw new Error("Trying to call inboud block numbers but still writeInReceipt is not successfull");
-      console.log("handleInboundBlockNumbers called...");
       await handleInboundBlockNumbers();
-    }catch (error) {
+    } catch (error) {
       console.error("Error calling oracle:", error);
     }
   };
@@ -161,72 +165,75 @@ export default function OracleButton() {
   return (
     <div className="flex flex-col space-y-4">
       {/* Block countdown TODO: handle block revert */}
-      {blocksRemaining !== null && (
-        <div className="text-center">
-          {blocksRemaining > 0 ? (
-            <>
-              <p className="text-lg font-semibold text-gray-700">
-                Waiting for {blocksRemaining} more block
-                {blocksRemaining !== 1 ? "s" : ""}
-                <span className="animate-pulse">...</span>
-              </p>
-              <p className="text-sm text-gray-500">
-                {finalitySpeed === "FAST"
-                  ? "Fast mode requires 2 block confirmations, please wait..."
-                  : "Slow mode requires 5 block confirmations, please wait..."}
-              </p>
-            </>
-          ) : (
-            <p className="text-lg font-semibold text-green-600">
-              Countdown finished, you can now Switch Network and Call the Oracle
-              to submit the information.
+      <div className="text-center">
+        {blocksRemaining > 0 ? (
+          <>
+            <p className="text-lg font-semibold text-gray-700">
+              Waiting for {blocksRemaining} more block
+              {blocksRemaining !== 1 ? "s" : ""}
+              <span className="animate-pulse">...</span>
             </p>
-          )}
-        </div>
-      )}
+            <p className="text-sm text-gray-500">
+              {finalitySpeed === "FAST"
+                ? `Fast mode requires ${BLOCKS_FOR_FINALITY["FAST"]} block confirmations, please wait...`
+                : `Slow mode requires ${BLOCKS_FOR_FINALITY["SLOW"]} block confirmations, please wait...`}
+            </p>
+          </>
+        ) : (
+          <p className="text-lg font-semibold text-green-600">
+            Countdown finished, you can now Switch Network and Call the Oracle
+            to submit the information.
+          </p>
+        )}
+      </div>
 
       {/* Switch Network Button */}
-      {chainId != (blockchains[moveNumber % 2] ?? 0) && (
-        <div className="flex items-center justify-center gap-4">
-          <button
-            className={`px-8 py-4 rounded-xl text-xl font-bold transition-all transform hover:scale-105 shadow-lg text-white ${
-              switchChainIsSuccess || blocksRemaining! > 0
-                ? "bg-gray-400 cursor-not-allowed"
-                : "bg-[#F6851B] hover:bg-[#E2761B]"
-            }`}
-            onClick={() => {
-              switchChain({ chainId: blockchains[moveNumber % 2] ?? 0 });
-            }}
-            disabled={switchChainIsPending || switchChainIsSuccess}
-          >
-            {!switchChainIsSuccess || blocksRemaining! > 0
+      <div className="flex items-center justify-center gap-4">
+        <button
+          className={`px-8 py-4 rounded-xl text-xl font-bold transition-all transform hover:scale-105 shadow-lg text-white ${
+            switchChainIsPending ||
+            chainId == blockchains[moveNumber % 2] ||
+            blocksRemaining != 0
+              ? "bg-gray-400 cursor-not-allowed"
+              : "bg-[#F6851B] hover:bg-[#E2761B]"
+          }`}
+          onClick={async () => {
+            console.log("useSwitchChain chains", chains);
+            console.log("switchChain Pre", blockchains[moveNumber % 2]);
+            await switchChain({ chainId: blockchains[moveNumber % 2] ?? 0 });
+            console.log("switchChain Post", blockchains[moveNumber % 2]);
+          }}
+          disabled={
+            switchChainIsPending || chainId == blockchains[moveNumber % 2]
+          }
+        >
+          {switchChainIsPending
+            ? "Please Wait..."
+            : chainId != blockchains[moveNumber % 2]
               ? `Switch network to: ${blockchains[moveNumber % 2] ?? 0}`
-              : switchChainIsPending
-                ? "Please Wait..."
-                : "Done"}
-          </button>
-          <Tooltip
-            content="The next step is to call the Relayer to push our move to the destination blockchain. Let's go!"
-            link={{
-              href: "https://docs.axsdasdsadsadelar.dev/",
-              text: "Learn More",
-            }}
-          />
-        </div>
-      )}
+              : "On the right chain to call the Oracle"}
+        </button>
+        <Tooltip
+          content="The next step is to call the Relayer to push our move to the destination blockchain. Let's go!"
+          link={{
+            href: "https://docs.axsdasdsadsadelar.dev/",
+            text: "Learn More",
+          }}
+        />
+      </div>
 
       {/* Oracle button */}
       {!isSuccessWriteBlock && !isSuccessWriteInReceipt && (
         <div className="flex items-center justify-center gap-4">
           <button
             className={`px-8 py-4 rounded-xl text-xl font-bold transition-all transform hover:scale-105 shadow-lg text-white ${
-              isEnabled && switchChainIsSuccess
+              blocksRemaining == 0 && switchChainIsSuccess
                 ? "bg-[#F6851B] hover:bg-[#E2761B]"
                 : "bg-gray-400 cursor-not-allowed"
             }`}
             onClick={handleOracleCall}
             disabled={
-              !isEnabled ||
+              blocksRemaining != 0 ||
               isPendingWriteBlock ||
               isPendingWriteInReceipt ||
               switchChainIsPending ||
@@ -251,9 +258,10 @@ export default function OracleButton() {
         </div>
       )}
 
-      {(errorWriteBlock || errorWriteInReceipt) && (
+      {(errorWriteBlock || errorWriteInReceipt || switchChainError) && (
         <div className="p-4 bg-red-100 border border-red-400 text-red-700 rounded">
-          Error: {errorWriteBlock || errorWriteInReceipt}
+          Error:{" "}
+          {errorWriteBlock || errorWriteInReceipt || switchChainError?.message}
         </div>
       )}
 
