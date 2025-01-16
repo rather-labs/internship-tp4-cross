@@ -144,6 +144,7 @@ export default function Relayer() {
 
   const handleMsgDelivered = async (log: any) => {
     console.log("Relayer: handleMsgDelivered", " | chainId ", chainId);
+    console.log("event", log.args);
     // Remove delivered messages from chainData
     for (const [index, msgNumber] of log.args.inboundMessageNumbers.entries()) {
       if (

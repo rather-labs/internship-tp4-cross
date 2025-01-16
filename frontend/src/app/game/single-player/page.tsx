@@ -1,6 +1,6 @@
 "use client";
 
-import { useAccount, useConfig, useDisconnect, useWriteContract } from "wagmi";
+import { useAccount, useBlockNumber, useConfig, useWriteContract } from "wagmi";
 import { useState, useEffect } from "react";
 import { useRouter } from "next/navigation";
 import toast, { Toaster } from "react-hot-toast";
@@ -17,10 +17,9 @@ import {
   BLOCKS_FOR_FINALITY,
   CHAIN_NAMES,
 } from "@/utils/ContractInfo";
-import { writeContract } from "@wagmi/core";
-import { waitForTransactionReceipt } from "wagmi/actions";
 import { Tooltip } from "@/components/Tooltip";
 import { CallRelayer } from "@/components/CallRelayer";
+import { waitForTransactionReceipt } from "wagmi/actions";
 
 const moveToNumber: { [key: string]: number } = {
   Rock: 1,
@@ -31,7 +30,7 @@ const moveToNumber: { [key: string]: number } = {
 function SinglePlayerGame() {
   const router = useRouter();
   const account = useAccount();
-  let config = useConfig();
+  const config = useConfig();
   const [currentPlayer, setCurrentPlayer] = useState<1 | 2>(1);
   const [gameState, setGameState] = useState<
     "WAITING" | "PLAYING" | "TRANSITION"
@@ -46,11 +45,16 @@ function SinglePlayerGame() {
     setFinalitySpeed,
     setBlockChains,
     setMoveNumber,
+    setMoveBlockNumber,
   } = useGame();
 
-  const [errorGameMove, setErrorGameMove] = useState("");
-  const [isPendingGameMove, setPendingGameMove] = useState(false);
-  const [isSuccessGameMove, setSuccessGameMove] = useState(false);
+  const {
+    writeContractAsync: writeContract,
+    error: errorGameMove,
+    isPending: isPendingGameMove,
+  } = useWriteContract();
+
+  const [waitingForTxReceipt, setWaitingForTxReceipt] = useState(false);
 
   // Redirect if not connected
   useEffect(() => {
@@ -66,10 +70,7 @@ function SinglePlayerGame() {
         chainId === CHAIN_IDS.localhost_1
           ? CHAIN_IDS.localhost_2
           : CHAIN_IDS.localhost_1;
-      setErrorGameMove("");
-      setPendingGameMove(true);
-      setSuccessGameMove(false);
-      const txHash = await writeContract(config, {
+      const txHash = await writeContract({
         address: CONTRACT_ADDRESSES["game"][
           CHAIN_NAMES[
             chainId as keyof typeof CHAIN_NAMES
@@ -84,12 +85,18 @@ function SinglePlayerGame() {
           finalitySpeed ? BLOCKS_FOR_FINALITY[finalitySpeed] : 1,
         ],
       });
-      await waitForTransactionReceipt(config, {
+      setWaitingForTxReceipt(true);
+      const txReceipt = await waitForTransactionReceipt(config, {
         hash: txHash,
       });
+      if (txReceipt.status === "reverted") {
+        throw new Error("Transaction Recepit status returned as reverted");
+      }
       setBlockChains([chainId, destinationChainId]);
       setMoveNumber(1);
-      setSuccessGameMove(true);
+      setMoveBlockNumber(Number(txReceipt.blockNumber));
+      setWaitingForTxReceipt(false);
+      setGameState("TRANSITION");
     } catch (error: any) {
       toast.error("Failed to submit move. Please try again.", {
         duration: 5000,
@@ -100,19 +107,9 @@ function SinglePlayerGame() {
           border: "1px solid #F87171",
         },
       });
-      setErrorGameMove(error.message);
       console.error("Error submitting move:", error);
     }
-    setPendingGameMove(false);
   };
-
-  // Add this effect to handle successful transactions
-  useEffect(() => {
-    if (isSuccessGameMove) {
-      setLastMove(currentChoice);
-      setGameState("TRANSITION");
-    }
-  }, [isSuccessGameMove, currentChoice]);
 
   const handleNextTurn = () => {
     setCurrentPlayer((current) => (current === 1 ? 2 : 1));
@@ -189,14 +186,14 @@ function SinglePlayerGame() {
               currentPlayer={currentPlayer}
               setCurrentChoice={setCurrentChoice}
               handleMove={handleFirstMove}
-              disableMove={isPendingGameMove}
+              disableMove={isPendingGameMove || waitingForTxReceipt}
             />
             {errorGameMove && (
               <div className="mt-4 p-4 bg-red-100 border border-red-400 text-red-700 rounded">
-                Error: {errorGameMove}
+                Error: {errorGameMove.message}
               </div>
             )}
-            {isPendingGameMove && (
+            {(isPendingGameMove || waitingForTxReceipt) && (
               <div className="mt-4 p-4 bg-blue-100 border border-blue-400 text-blue-700 rounded">
                 Please wait until the move transaction is confirmed...
               </div>

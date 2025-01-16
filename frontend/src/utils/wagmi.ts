@@ -32,15 +32,15 @@ export function getConfig() {
           url: "https://rockpaperscissors.com",
           iconUrl: "https://rockpaperscissors.com/favicon.ico",
         },
-        logging: {
-          developerMode: true, // Enables developer mode logs
-          sdk: true           // Enables SDK-specific logs
-        },
+        //logging: {
+        //  developerMode: true, // Enables developer mode logs
+        //  sdk: true           // Enables SDK-specific logs
+        //},
       })
     ],
     transports: {
-      [hardhat1.id]: http('http://127.0.0.1:8547', {timeout: 10_000, retryCount: 100}),
-      [hardhat2.id]: http('http://127.0.0.1:8546', {timeout: 10_000, retryCount: 100}),
+      [hardhat1.id]: http('http://127.0.0.1:8547', {timeout: 10_000, retryCount: 10}),
+      [hardhat2.id]: http('http://127.0.0.1:8546', {timeout: 10_000, retryCount: 10}),
     },
     storage: createStorage({ storage: window.localStorage }), 
     syncConnectedChain: true, 

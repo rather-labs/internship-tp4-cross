@@ -158,14 +158,15 @@ function chainDataReducer(
 
 export function ChainDataProvider({ children }: { children: ReactNode }) {
   // Load initial state from localStorage or use default
-  const loadedState = getData("chainData", initialState);
+  //const loadedState = getData("chainData", initialState);
+  //const [state, dispatch] = useReducer(chainDataReducer, loadedState);
 
-  const [state, dispatch] = useReducer(chainDataReducer, loadedState);
+  const [state, dispatch] = useReducer(chainDataReducer, initialState);
 
   // Save to localStorage whenever state changes
-  useEffect(() => {
-    storeData("chainData", state);
-  }, [state]);
+  //useEffect(() => {
+  //  storeData("chainData", state);
+  //}, [state]);
 
   return (
     <ChainDataContext.Provider value={{ state, dispatch }}>

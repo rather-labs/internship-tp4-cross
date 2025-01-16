@@ -13,24 +13,8 @@ export function Game({
   handleMove: (choice: string) => void;
   disableMove: boolean;
 }) {
-  const {
-    data: blockNumber,
-    isError,
-    isLoading,
-  } = useBlockNumber({
-    watch: true,
-  });
-  const { setMoveBlockNumber } = useGame();
-
   const handleClick = async (choice: string) => {
     setCurrentChoice(choice);
-    try {
-      // Get the latest block number directly if the hook hasn't updated
-      const latestBlock = blockNumber;
-      setMoveBlockNumber(Number(latestBlock));
-    } catch (error) {
-      console.error("Error getting block number:", error);
-    }
     setTimeout(() => {
       handleMove(choice);
     }, 0);
@@ -60,8 +44,11 @@ export function Game({
 
       <div className="flex items-center gap-2">
         <p className="text-[#6A737D] text-lg">
-          In this step, you play rock-paper-scissors as Player {currentPlayer}. You now need to select your game move. Once you select your move, you will be prompted to sign a transaction
-          with your wallet. Then, your move will be transmitted cross-chain using the cross communication protocol in the next step.
+          In this step, you play rock-paper-scissors as Player {currentPlayer}.
+          You now need to select your game move. Once you select your move, you
+          will be prompted to sign a transaction with your wallet. Then, your
+          move will be transmitted cross-chain using the cross communication
+          protocol in the next step.
         </p>
         <Tooltip
           content="We use a secure cross-chain communication protocol to safely transmit your move between different blockchains while maintaining game integrity."

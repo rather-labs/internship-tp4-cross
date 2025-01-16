@@ -1,5 +1,5 @@
 "use client";
-import { useAccount, useConfig } from "wagmi";
+import { useAccount, useConfig, useWriteContract } from "wagmi";
 import { writeContract } from "@wagmi/core";
 import {
   CONTRACT_ABIS,
@@ -26,10 +26,14 @@ export default function RelayerButton() {
 
   const { state: chainData } = useChainData();
 
-  let config = useConfig();
+  const {
+    writeContractAsync: writeContractInReceipt,
+    error: writeError,
+    isPending,
+    isSuccess,
+  } = useWriteContract();
 
-  const [writeError, setWriteError] = useState("");
-  const [isSuccess, setIsSuccess] = useState(false);
+  const config = useConfig();
 
   const [inboundingMsgs, setInboundingMsgs] = useState(false);
 
@@ -42,8 +46,6 @@ export default function RelayerButton() {
 
   const handleInboundMsgs = async () => {
     console.log("Relayer: handleInboundMsgs", " | chainId ", chainId);
-    setWriteError("");
-    setInboundingMsgs(true);
     for (const chain of SUPPORTED_CHAINS) {
       if (
         chainId === undefined ||
@@ -69,14 +71,11 @@ export default function RelayerButton() {
         },
         [[], [], []] as [msgReceipt[], Hex[][], number[]]
       );
-      console.log("receipts", receipts, " | chainId ", chainId);
-      console.log("blockNumbers", blockNumbers, " | chainId ", chainId);
       if (receipts.length == 0) {
         continue;
       }
       try {
-        setIsSuccess(false);
-        const txHash = await writeContract(config, {
+        const txHash = await writeContractInReceipt({
           address: incomingAddress,
           abi: JSON.parse(CONTRACT_ABIS["incoming"]),
           functionName: "inboundMessages",
@@ -90,18 +89,18 @@ export default function RelayerButton() {
           //gas: 30000000n, // Explicit gas limit
           //...GAS_CONFIG, // Add gas price configuration
         });
-        await waitForTransactionReceipt(config, {
+        setInboundingMsgs(true);
+        const txReceipt = await waitForTransactionReceipt(config, {
           hash: txHash,
         });
-        setIsSuccess(true);
+        if (txReceipt.status === "reverted") {
+          throw new Error("Transaction Recepit status returned as reverted");
+        }
+        setInboundingMsgs(false);
       } catch (error: any) {
-        setWriteError(
-          writeError + (error.reason ?? error.data?.message ?? error.message)
-        );
         console.error("Error Inbounding messages:", error);
       }
     }
-    setInboundingMsgs(false);
   };
 
   // Only watch for events if we have a valid chainId
@@ -115,9 +114,9 @@ export default function RelayerButton() {
         <button
           className="bg-[#F6851B] hover:bg-[#E2761B] px-8 py-4 rounded-xl text-xl text-white font-bold transition-all transform hover:scale-105 shadow-lg"
           onClick={() => handleInboundMsgs()}
-          disabled={inboundingMsgs}
+          disabled={isPending || inboundingMsgs}
         >
-          {inboundingMsgs ? (
+          {isPending || inboundingMsgs ? (
             <div className="flex items-center justify-center">
               <div className="animate-spin rounded-full h-6 w-6 border-b-2 border-white"></div>
             </div>
@@ -131,10 +130,10 @@ export default function RelayerButton() {
         </p>
         {writeError && (
           <div className="p-4 bg-red-100 border border-red-400 text-red-700 rounded">
-            Error: {writeError}
+            Error: {writeError.message}
           </div>
         )}
-        {isSuccess && (
+        {isSuccess && !inboundingMsgs && (
           <div className="p-4 bg-green-100 border border-green-400 text-green-700 rounded font-bold text-center">
             Transaction successful!
           </div>

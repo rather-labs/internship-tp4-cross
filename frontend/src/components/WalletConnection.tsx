@@ -32,7 +32,6 @@ export function WalletConnection() {
   const { data: ensAvatar } = useEnsAvatar({ name: ensName! });
 
   useEffect(() => {
-    console.log("chainId", chainId);
     if (chainId) {
       const network = SUPPORTED_CHAINS.indexOf(chainId);
       if (network < 0) {
