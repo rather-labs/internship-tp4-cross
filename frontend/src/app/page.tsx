@@ -1,98 +1,51 @@
 "use client";
 
 import { useAccount, useConnect } from "wagmi";
-import { useState } from "react";
+import { useEffect } from "react";
 import { useRouter } from "next/navigation";
 import { Toaster } from "react-hot-toast";
 import { Tooltip } from "@/components/Tooltip";
 import { Header } from "@/components/Header";
+import { useGame } from "@/contexts/GameContext";
+import { useChainData } from "@/contexts/ChainDataContext";
 
 function App() {
   const account = useAccount();
   const { connectors, connect } = useConnect();
-  const [playerCount, setPlayerCount] = useState<1 | 2 | null>(null);
   const router = useRouter();
+  const { restartGame } = useGame();
+  const { dispatch } = useChainData();
 
   const metamaskConnector = connectors.find(
     (connector) => connector.name === "MetaMask"
   ) as (typeof connectors)[number];
 
   const renderGameButton = () => {
-    if (!playerCount) {
-      return (
-        <div className="space-y-6 mt-8">
-          <div className="flex gap-8 justify-center">
-            <button
-              className="bg-[#037DD6] hover:bg-[#0260A4] text-white px-8 py-4 rounded-xl text-xl font-bold transition-all transform hover:scale-105 shadow-lg"
-              onClick={() => setPlayerCount(1)}
-            >
-              Single Player
-            </button>
-
-            <div className="relative group">
-              <button
-                className="bg-[#BBC0C5] px-8 py-4 rounded-xl text-xl font-bold cursor-not-allowed opacity-75"
-                onClick={() => setPlayerCount(2)}
-                disabled={true}
-              >
-                Two Players
-              </button>
-              <div className="absolute top-1/2 left-full transform -translate-y-1/2 ml-2 px-3 py-2 bg-gray-900 text-white text-sm rounded-lg opacity-0 group-hover:opacity-100 transition-opacity whitespace-nowrap">
-                Two-Player versus mode <br /> coming soon!
-              </div>
-            </div>
-          </div>
-          <p className="text-[#BBC0C5]">
-            Please select the game mode to start the game
-          </p>
-        </div>
-      );
-    }
-
     return (
       <div className="space-y-4 mt-8">
-        {playerCount === 1 ? (
-          <div className="ml-6 flex items-center justify-center gap-2">
-            <button
-              className="bg-[#F6851B] hover:bg-[#E2761B] text-white px-8 py-4 rounded-xl text-xl font-bold transition-all transform hover:scale-105 shadow-lg"
-              onClick={() => router.push("/game/single-player")}
-            >
-              Start Single Player Game
-            </button>
-            <Tooltip
-              content="You will play taking both your turn and the other player's turn, simulating a two-player game. You can also use this for local play with a friend!"
-              link={{
-                href: "https://docs.axelar.dev/",
-                text: "Learn More",
-              }}
-            />
-          </div>
-        ) : (
-          <div className="ml-6 flex items-center justify-center gap-2">
-            <button
-              className="bg-[#BBC0C5] px-8 py-4 rounded-xl text-xl font-bold cursor-not-allowed opacity-75"
-              disabled={true}
-            >
-              Two Player Game Coming Soon
-            </button>
-            <Tooltip
-              content="You will play against another player on a different blockchain network. This feature is coming soon!"
-              link={{
-                href: "https://docs.axelar.dev/",
-                text: "Learn More",
-              }}
-            />
-          </div>
-        )}
-        <button
-          className="block mx-auto text-[#BBC0C5] hover:text-[#037DD6] transition-colors"
-          onClick={() => setPlayerCount(null)}
-        >
-          Change Mode
-        </button>
+        <div className="ml-6 flex items-center justify-center gap-2">
+          <button
+            className="bg-[#F6851B] hover:bg-[#E2761B] text-white px-8 py-4 rounded-xl text-xl font-bold transition-all transform hover:scale-105 shadow-lg"
+            onClick={() => router.push("/game/single-player")}
+          >
+            Start Game
+          </button>
+          <Tooltip
+            content="You will play taking both your turn and the other player's turn, simulating a two-player game. You can also use this for local play with a friend!"
+            link={{
+              href: "https://docs.axelar.dev/",
+              text: "Learn More",
+            }}
+          />
+        </div>
       </div>
     );
   };
+
+  useEffect(() => {
+    restartGame();
+    dispatch({ type: "RESET" }); // clears chain data
+  }, []);
 
   return (
     <div className="min-h-screen bg-[#FFFFFF] text-[#24272A]">
@@ -141,22 +94,17 @@ function App() {
         </div>
 
         {/* Game Features */}
-        <section className="grid md:grid-cols-2 gap-40">
+        <section className="grid md:grid-cols-1 gap-40">
           {[
             {
-              title: "Cross-Chain Protocol Documentation",
-              desc: "Learn more about the protocol and how it works",
-              link: "https://docs.crosschainrps.com",
-            },
-            {
-              title: "Rock-Paper-Scissors Game Documentation",
-              desc: "Learn more about the game, how it works, and how to play",
+              title: "Cross-Chain Protocol and Game Article",
+              desc: "Learn more about the protocol and game works",
               link: "https://docs.crosschainrps.com",
             },
           ].map((feature, i) => (
             <div
               key={i}
-              className="bg-white p-8 rounded-2xl shadow-lg hover:shadow-xl transition-shadow"
+              className="bg-white p-8 rounded-2xl shadow-lg hover:shadow-xl transition-shadow  w-fit mx-auto"
             >
               <div className="text-4xl mb-4">{i === 0 ? "⛓️" : "✂️"}</div>
               <h3 className="text-xl font-bold mb-4">{feature.title}</h3>

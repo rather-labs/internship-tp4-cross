@@ -59,7 +59,8 @@ type Action =
       chainId: number;
       sourceId: number;
       blockNumber: number;
-    };
+    }
+  | { type: "RESET" };
 
 const initialState: ChainDataState = {};
 for (const chainId of SUPPORTED_CHAINS) {
@@ -151,22 +152,24 @@ function chainDataReducer(
         },
       };
 
+    case "RESET":
+      return initialState;
+
     default:
       return state;
   }
 }
 
 export function ChainDataProvider({ children }: { children: ReactNode }) {
+  //const [state, dispatch] = useReducer(chainDataReducer, initialState);
   // Load initial state from localStorage or use default
-  //const loadedState = getData("chainData", initialState);
-  //const [state, dispatch] = useReducer(chainDataReducer, loadedState);
-
-  const [state, dispatch] = useReducer(chainDataReducer, initialState);
+  const loadedState = getData("Rock-Paper-Scissors-chainData", initialState);
+  const [state, dispatch] = useReducer(chainDataReducer, loadedState);
 
   // Save to localStorage whenever state changes
-  //useEffect(() => {
-  //  storeData("chainData", state);
-  //}, [state]);
+  useEffect(() => {
+    storeData("Rock-Paper-Scissors-chainData", state);
+  }, [state]);
 
   return (
     <ChainDataContext.Provider value={{ state, dispatch }}>
@@ -180,5 +183,8 @@ export function useChainData() {
   if (!context) {
     throw new Error("useChainData must be used within a ChainDataProvider");
   }
-  return context;
+
+  return {
+    ...context,
+  };
 }

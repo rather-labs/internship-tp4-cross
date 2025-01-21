@@ -1,6 +1,5 @@
 "use client";
 import { useAccount, useConfig, useWriteContract } from "wagmi";
-import { writeContract } from "@wagmi/core";
 import {
   CONTRACT_ABIS,
   CONTRACT_ADDRESSES,
@@ -13,6 +12,8 @@ import React, { useState } from "react";
 import { Address, Hex } from "viem";
 import { waitForTransactionReceipt } from "wagmi/actions";
 import { useChainData } from "../contexts/ChainDataContext";
+import { useGame } from "@/contexts/GameContext";
+import { Tooltip } from "./Tooltip";
 
 const GAS_CONFIG = {
   maxFeePerGas: 100000000000n, // 100 gwei
@@ -25,6 +26,8 @@ export default function RelayerButton() {
   const { address: walletAddress, isConnected, chainId } = useAccount();
 
   const { state: chainData } = useChainData();
+
+  const { blockchains, moveNumber, gameState, setGameState } = useGame();
 
   const {
     writeContractAsync: writeContractInReceipt,
@@ -75,6 +78,7 @@ export default function RelayerButton() {
         continue;
       }
       try {
+        setInboundingMsgs(true);
         const txHash = await writeContractInReceipt({
           address: incomingAddress,
           abi: JSON.parse(CONTRACT_ABIS["incoming"]),
@@ -89,14 +93,13 @@ export default function RelayerButton() {
           //gas: 30000000n, // Explicit gas limit
           //...GAS_CONFIG, // Add gas price configuration
         });
-        setInboundingMsgs(true);
         const txReceipt = await waitForTransactionReceipt(config, {
           hash: txHash,
         });
+        setInboundingMsgs(false);
         if (txReceipt.status === "reverted") {
           throw new Error("Transaction Recepit status returned as reverted");
         }
-        setInboundingMsgs(false);
       } catch (error: any) {
         console.error("Error Inbounding messages:", error);
       }
@@ -112,14 +115,30 @@ export default function RelayerButton() {
     <div className="p-4 rounded-lg bg-[#ffffff]">
       <div className="flex flex-col space-y-4">
         <button
-          className="bg-[#F6851B] hover:bg-[#E2761B] px-8 py-4 rounded-xl text-xl text-white font-bold transition-all transform hover:scale-105 shadow-lg"
+          className={`px-8 py-4 rounded-xl text-xl font-bold transition-all transform hover:scale-105 shadow-lg text-white ${
+            isPending ||
+            inboundingMsgs ||
+            (isSuccess && gameState !== "RELAYER_FINISHED") ||
+            chainId != blockchains[moveNumber % 2]
+              ? "bg-gray-400 cursor-not-allowed"
+              : "bg-[#F6851B] hover:bg-[#E2761B]"
+          }`}
           onClick={() => handleInboundMsgs()}
-          disabled={isPending || inboundingMsgs}
+          disabled={
+            isPending ||
+            inboundingMsgs ||
+            (isSuccess && gameState !== "RELAYER_FINISHED") ||
+            chainId != blockchains[moveNumber % 2]
+          }
         >
-          {isPending || inboundingMsgs ? (
+          {isPending ||
+          inboundingMsgs ||
+          (isSuccess && gameState !== "RELAYER_FINISHED") ? (
             <div className="flex items-center justify-center">
               <div className="animate-spin rounded-full h-6 w-6 border-b-2 border-white"></div>
             </div>
+          ) : chainId != blockchains[moveNumber % 2] ? (
+            `Switch network to: ${CHAIN_NAMES[blockchains[moveNumber % 2] as keyof typeof CHAIN_NAMES]}`
           ) : (
             "Call Relayer"
           )}
@@ -133,9 +152,33 @@ export default function RelayerButton() {
             Error: {writeError.message}
           </div>
         )}
-        {isSuccess && !inboundingMsgs && (
+        {isSuccess && gameState !== "RELAYER_FINISHED" && (
+          <div className="mt-4 p-4 bg-blue-100 border border-blue-400 text-blue-700 rounded">
+            Waiting for relayer transaction confirmation...
+          </div>
+        )}
+        {isSuccess && gameState === "RELAYER_FINISHED" && (
           <div className="p-4 bg-green-100 border border-green-400 text-green-700 rounded font-bold text-center">
             Transaction successful!
+          </div>
+        )}
+        {!inboundingMsgs && gameState === "RELAYER_FINISHED" && (
+          <div className="flex items-center justify-center gap-4">
+            <button
+              className="bg-[#F6851B] hover:bg-[#E2761B] px-8 py-4 rounded-xl text-xl font-bold transition-all transform hover:scale-105 shadow-lg text-white"
+              onClick={() => {
+                setGameState("TRANSITION");
+              }}
+            >
+              Continue
+            </button>
+            <Tooltip
+              content="The next step is to play the response move from as the second player!"
+              link={{
+                href: "https://docs.axsdasdsadsadelar.dev/",
+                text: "Learn More",
+              }}
+            />
           </div>
         )}
       </div>

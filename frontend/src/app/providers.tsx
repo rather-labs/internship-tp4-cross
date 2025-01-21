@@ -5,6 +5,7 @@ import { type ReactNode, useState } from "react";
 import { WagmiProvider } from "wagmi";
 
 import { ChainDataProvider } from "@/contexts/ChainDataContext";
+import { GameProvider } from "@/contexts/GameContext";
 
 import { getConfig } from "@/utils/wagmi";
 
@@ -14,7 +15,9 @@ export function Providers({ children }: { children: ReactNode }) {
   return (
     <WagmiProvider config={getConfig()}>
       <QueryClientProvider client={queryClient}>
-        <ChainDataProvider>{children}</ChainDataProvider>
+        <ChainDataProvider>
+          <GameProvider>{children}</GameProvider>
+        </ChainDataProvider>
       </QueryClientProvider>
     </WagmiProvider>
   );

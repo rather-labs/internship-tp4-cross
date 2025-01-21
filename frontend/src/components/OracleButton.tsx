@@ -31,20 +31,17 @@ export default function OracleButton() {
     switchChainAsync: switchChain,
     error: switchChainError,
     isPending: switchChainIsPending,
-    isSuccess: switchChainIsSuccess,
   } = useSwitchChain({ config });
 
   const {
     writeContractAsync: writeContractBlock,
     error: errorWriteBlock,
-    isPending: isPendingWriteBlock,
     isSuccess: isSuccessWriteBlock,
   } = useWriteContract({ config });
 
   const {
     writeContractAsync: writeContractInReceipt,
     error: errorWriteInReceipt,
-    isPending: isPendingWriteInReceipt,
     isSuccess: isSuccessWriteInReceipt,
   } = useWriteContract({ config });
 
@@ -57,12 +54,13 @@ export default function OracleButton() {
   const { state: chainData, dispatch } = useChainData();
 
   const {
-    setIsOracleCalled,
+    setGameState,
     finalitySpeed,
     moveBlockNumber,
     blockchains,
     moveNumber,
   } = useGame();
+
   const [blocksRemaining, setBlocksRemaining] = useState<number>(1e10);
 
   // Get the correct contract address for the current chain
@@ -70,11 +68,18 @@ export default function OracleButton() {
     CHAIN_NAMES[chainId as keyof typeof CHAIN_NAMES] as keyof ChainAddresses
   ] as Address;
   useEffect(() => {
-    if (
-      blockNumber === undefined ||
-      chainId === undefined ||
-      chainId == blockchains[moveNumber % 2]
-    ) {
+    if (blockNumber === undefined || chainId === undefined) {
+      return;
+    }
+    if (chainId == blockchains[moveNumber % 2]) {
+      const moveChainId = blockchains[(moveNumber + 1) % 2];
+      const remaining = Math.max(
+        0,
+        (finalitySpeed ? BLOCKS_FOR_FINALITY[finalitySpeed] : 0) +
+          Number(moveBlockNumber) -
+          chainData[moveChainId ?? 0]?.blockNumber
+      );
+      setBlocksRemaining(remaining);
       return;
     }
     if (moveBlockNumber) {
@@ -198,23 +203,30 @@ export default function OracleButton() {
         <button
           className={`px-8 py-4 rounded-xl text-xl font-bold transition-all transform hover:scale-105 shadow-lg text-white ${
             switchChainIsPending ||
-            chainId == blockchains[moveNumber % 2] ||
-            blocksRemaining != 0
+            (chainId == blockchains[moveNumber % 2] && blocksRemaining == 0) ||
+            (chainId != blockchains[moveNumber % 2] && blocksRemaining != 0)
               ? "bg-gray-400 cursor-not-allowed"
               : "bg-[#F6851B] hover:bg-[#E2761B]"
           }`}
           onClick={async () => {
-            await switchChain({ chainId: blockchains[moveNumber % 2] ?? 0 });
+            await switchChain({
+              chainId:
+                blockchains[blockchains.indexOf(chainId) == 0 ? 1 : 0] ?? 0,
+            });
           }}
           disabled={
-            switchChainIsPending || chainId == blockchains[moveNumber % 2]
+            switchChainIsPending ||
+            (chainId == blockchains[moveNumber % 2] && blocksRemaining == 0) ||
+            (chainId != blockchains[moveNumber % 2] && blocksRemaining != 0)
           }
         >
           {switchChainIsPending
             ? "Please Wait..."
             : chainId != blockchains[moveNumber % 2]
               ? `Switch network to: ${CHAIN_NAMES[blockchains[moveNumber % 2] as keyof typeof CHAIN_NAMES]}`
-              : "On the right chain to call the Oracle"}
+              : blocksRemaining != 0
+                ? `Switch network to wait for finality, to: ${CHAIN_NAMES[blockchains[(moveNumber + 1) % 2] as keyof typeof CHAIN_NAMES]}`
+                : "On the right chain to call the Oracle"}
         </button>
         <Tooltip
           content="The next step is to call the Relayer to push our move to the destination blockchain. Let's go!"
@@ -231,17 +243,16 @@ export default function OracleButton() {
         <div className="flex items-center justify-center gap-4">
           <button
             className={`px-8 py-4 rounded-xl text-xl font-bold transition-all transform hover:scale-105 shadow-lg text-white ${
-              blocksRemaining == 0 && switchChainIsSuccess
-                ? "bg-[#F6851B] hover:bg-[#E2761B]"
-                : "bg-gray-400 cursor-not-allowed"
+              blocksRemaining != 0 && chainId != blockchains[moveNumber % 2]
+                ? "bg-gray-400 cursor-not-allowed"
+                : "bg-[#F6851B] hover:bg-[#E2761B]"
             }`}
             onClick={handleOracleCall}
             disabled={
               blocksRemaining != 0 ||
-              isPendingWriteBlock ||
-              isPendingWriteInReceipt ||
+              isPendingOracle ||
               switchChainIsPending ||
-              !switchChainIsSuccess
+              chainId != blockchains[moveNumber % 2]
             }
           >
             {isPendingOracle ? (
@@ -271,6 +282,12 @@ export default function OracleButton() {
         </div>
       )}
 
+      {isPendingOracle && (
+        <div className="mt-4 p-4 bg-blue-100 border border-blue-400 text-blue-700 rounded">
+          Waiting for oracle transactions confirmations...
+        </div>
+      )}
+
       {isSuccessWriteBlock && isSuccessWriteInReceipt && !isPendingOracle && (
         <div className="flex flex-col space-y-4">
           <div className="p-4 bg-green-100 border border-green-400 text-green-700 rounded font-bold text-center">
@@ -279,7 +296,7 @@ export default function OracleButton() {
           <div className="flex items-center justify-center gap-4">
             <button
               className="bg-[#F6851B] hover:bg-[#E2761B] px-8 py-4 rounded-xl text-xl font-bold transition-all transform hover:scale-105 shadow-lg text-white"
-              onClick={() => setIsOracleCalled(true)}
+              onClick={() => setGameState("WAITING_RELAYER")}
             >
               Continue
             </button>

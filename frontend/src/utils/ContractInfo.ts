@@ -31,6 +31,8 @@ export const EVENT_SIGNATURES = {
     OutboundMessage:"event OutboundMessage(bytes,address,address,uint256,uint16,uint256,bool,uint256)",
     UpdateMessageFee:"event UpdateMessageFee(uint256,uint256,uint256)",
     InboundMessagesRes:"event InboundMessagesRes(address,uint256,uint256[],bool[],string[])",
+    MoveReceived:"event MoveReceived(uint256,uint256,uint8)",
+    GameResult:"event GameResult(uint256,uint256,string,uint256,string,uint8,uint8,uint8,uint16,uint256,uint256)",
 }
 
 // Contract ABIS per blockchain 

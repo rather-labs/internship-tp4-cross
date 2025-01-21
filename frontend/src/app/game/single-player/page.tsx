@@ -1,205 +1,62 @@
 "use client";
 
-import { useAccount, useBlockNumber, useConfig, useWriteContract } from "wagmi";
-import { useState, useEffect } from "react";
+import { useAccount } from "wagmi";
+import { useEffect } from "react";
 import { useRouter } from "next/navigation";
-import toast, { Toaster } from "react-hot-toast";
+import { Toaster } from "react-hot-toast";
 import { CallOracle } from "@/components/CallOracle";
 import { Transition } from "@/components/Transition";
-import { Game } from "@/components/Game";
+import { MoveSelection } from "@/components/MoveSelection";
 import { Header } from "@/components/Header";
-import { GameProvider } from "@/contexts/GameContext";
 import { useGame } from "@/contexts/GameContext";
-import {
-  CONTRACT_ADDRESSES,
-  CHAIN_IDS,
-  CONTRACT_ABIS,
-  BLOCKS_FOR_FINALITY,
-  CHAIN_NAMES,
-} from "@/utils/ContractInfo";
-import { Tooltip } from "@/components/Tooltip";
 import { CallRelayer } from "@/components/CallRelayer";
-import { waitForTransactionReceipt } from "wagmi/actions";
+import { SpeedSelection } from "@/components/SpeedSelection";
+import { RestartGame } from "@/components/RestartGame";
+import { ShowResult } from "@/components/ShowResult";
 
-const moveToNumber: { [key: string]: number } = {
-  Rock: 1,
-  Paper: 2,
-  Scissors: 3,
-};
-
-function SinglePlayerGame() {
+export default function SinglePlayerGame() {
   const router = useRouter();
   const account = useAccount();
-  const config = useConfig();
-  const [currentPlayer, setCurrentPlayer] = useState<1 | 2>(1);
-  const [gameState, setGameState] = useState<
-    "WAITING" | "PLAYING" | "TRANSITION"
-  >("WAITING");
-  const [lastMove, setLastMove] = useState<string | null>(null);
-  const chainId = account.chainId;
-  const {
-    isOracleCalled,
-    setCurrentChoice,
-    currentChoice,
-    finalitySpeed,
-    setFinalitySpeed,
-    setBlockChains,
-    setMoveNumber,
-    setMoveBlockNumber,
-  } = useGame();
-
-  const {
-    writeContractAsync: writeContract,
-    error: errorGameMove,
-    isPending: isPendingGameMove,
-  } = useWriteContract();
-
-  const [waitingForTxReceipt, setWaitingForTxReceipt] = useState(false);
+  const { finalitySpeed, gameState, players } = useGame();
 
   // Redirect if not connected
   useEffect(() => {
-    if (account.status !== "connected") {
+    if (account.status !== "connected" && !account.isConnecting) {
       router.push("/");
     }
   }, [account.status, router]);
 
-  const handleFirstMove = async (choice: string) => {
-    try {
-      // Determine destination chain ID based on current chain
-      const destinationChainId =
-        chainId === CHAIN_IDS.localhost_1
-          ? CHAIN_IDS.localhost_2
-          : CHAIN_IDS.localhost_1;
-      const txHash = await writeContract({
-        address: CONTRACT_ADDRESSES["game"][
-          CHAIN_NAMES[
-            chainId as keyof typeof CHAIN_NAMES
-          ] as keyof (typeof CONTRACT_ADDRESSES)["game"]
-        ] as `0x${string}`,
-        abi: JSON.parse(CONTRACT_ABIS["game"]),
-        functionName: "startGame",
-        args: [
-          account.address as `0x${string}`, // player2 (in single player, same as player1)
-          destinationChainId,
-          moveToNumber[choice], // move
-          finalitySpeed ? BLOCKS_FOR_FINALITY[finalitySpeed] : 1,
-        ],
-      });
-      setWaitingForTxReceipt(true);
-      const txReceipt = await waitForTransactionReceipt(config, {
-        hash: txHash,
-      });
-      if (txReceipt.status === "reverted") {
-        throw new Error("Transaction Recepit status returned as reverted");
-      }
-      setBlockChains([chainId, destinationChainId]);
-      setMoveNumber(1);
-      setMoveBlockNumber(Number(txReceipt.blockNumber));
-      setWaitingForTxReceipt(false);
-      setGameState("TRANSITION");
-    } catch (error: any) {
-      toast.error("Failed to submit move. Please try again.", {
-        duration: 5000,
-        position: "top-center",
-        style: {
-          background: "#FEE2E2",
-          color: "#991B1B",
-          border: "1px solid #F87171",
-        },
-      });
-      console.error("Error submitting move:", error);
-    }
-  };
-
-  const handleNextTurn = () => {
-    setCurrentPlayer((current) => (current === 1 ? 2 : 1));
-    setGameState("PLAYING");
-    setLastMove(null);
-  };
-
   const renderGameContent = () => {
+    if (
+      !account.isConnecting &&
+      players[0] &&
+      account.address != players[0] &&
+      account.address != players[1]
+    ) {
+      return <RestartGame />;
+    }
+
+    if (gameState === "WAITING_ORACLE" || gameState === "ORACLE_FINISHED") {
+      return <CallOracle />;
+    }
+    if (gameState === "WAITING_RELAYER" || gameState === "RELAYER_FINISHED") {
+      return <CallRelayer />;
+    }
     if (gameState === "TRANSITION") {
-      if (!isOracleCalled) {
-        return <CallOracle />;
-      }
-      if (isOracleCalled) {
-        return <CallRelayer />;
-      }
-      return (
-        <Transition
-          handleNextTurn={handleNextTurn}
-          currentPlayer={currentPlayer}
-        />
-      );
+      return <Transition />;
+    }
+
+    if (!finalitySpeed) {
+      return <SpeedSelection />;
+    }
+
+    if (gameState === "WAITING_RESULT") {
+      return <ShowResult />;
     }
 
     return (
       <>
-        {!finalitySpeed ? (
-          <div className="space-y-6">
-            <div className="border-2 border-gray-300 bg-white shadow-lg p-6 rounded-xl">
-              <p className="text-xl mb-4">Choose Transaction Finality Speed</p>
-              <p className="text-m text-gray-600">
-                The first parameter we need to define is the amount of blocks we
-                want to wait to ensure{" "}
-                <a
-                  href="https://example.com/finality"
-                  className="text-blue-500 underline"
-                >
-                  finality
-                </a>{" "}
-                for the source blockchain. We simplified this down to two
-                choices.
-              </p>
-              <p className="text-m text-gray-600">
-                Fast: Wait less blocks, quicker finality, less confidence
-                <br />
-                Slow: Wait more blocks, slower finality, more confidence
-              </p>
-            </div>
-
-            <div className="flex justify-center items-center gap-4">
-              <button
-                onClick={() => setFinalitySpeed("FAST")}
-                className="bg-[#037DD6] hover:bg-[#0260A4] px-8 py-4 rounded-xl text-xl font-bold transition-all transform hover:scale-105 shadow-lg text-white"
-              >
-                Fast ⚡
-              </button>
-              <button
-                onClick={() => setFinalitySpeed("SLOW")}
-                className="bg-[#6A737D] hover:bg-[#4A5056] px-8 py-4 rounded-xl text-xl font-bold transition-all transform hover:scale-105 shadow-lg text-white"
-              >
-                Slow 🐢
-              </button>
-              <Tooltip
-                content="The speed configuration determines the number of blocks the oracle will wait until sending the message receipt trie. If we select to wait more blocks we will have to wait longer but we will not risk having a chain reordering event that removes our message from the source chain. The number of blocks for each speed is different for each blockchian and can be consulted on the documentation."
-                link={{
-                  href: "https://docs.axelar.dev/",
-                  text: "Learn More",
-                }}
-              />
-            </div>
-          </div>
-        ) : (
-          <>
-            <Game
-              currentPlayer={currentPlayer}
-              setCurrentChoice={setCurrentChoice}
-              handleMove={handleFirstMove}
-              disableMove={isPendingGameMove || waitingForTxReceipt}
-            />
-            {errorGameMove && (
-              <div className="mt-4 p-4 bg-red-100 border border-red-400 text-red-700 rounded">
-                Error: {errorGameMove.message}
-              </div>
-            )}
-            {(isPendingGameMove || waitingForTxReceipt) && (
-              <div className="mt-4 p-4 bg-blue-100 border border-blue-400 text-blue-700 rounded">
-                Please wait until the move transaction is confirmed...
-              </div>
-            )}
-          </>
-        )}
+        <MoveSelection />
       </>
     );
   };
@@ -236,12 +93,4 @@ function SinglePlayerGame() {
       </div>
     );
   }
-}
-
-export default function SinglePlayerGameWithProvider() {
-  return (
-    <GameProvider>
-      <SinglePlayerGame />
-    </GameProvider>
-  );
 }
