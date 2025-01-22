@@ -213,15 +213,18 @@ export function MoveSelection() {
       </div>
 
       <div className="flex items-center gap-2">
-        <p className="text-[#6A737D] text-lg">
+        <p className="text-m text-gray-600">
           In this step, you play rock-paper-scissors as Player {currentPlayer}.
+          <br />
           You now need to select your game move. Once you select your move, you
           will be prompted to sign a transaction with your wallet. Then, your
-          move will be transmitted cross-chain using the cross communication
-          protocol in the next step.
+          move will be transmitted cross-chain.
         </p>
         <Tooltip
-          content="We use a secure cross-chain communication protocol to safely transmit your move between different blockchains while maintaining game integrity."
+          content="We use the cross-chain communication bridge with on chain 
+                  inclusion proof verification to safely transmit your move 
+                  between blockchains.
+                  "
           link={{
             href: "https://docs.axelar.dev/",
             text: "Learn More",

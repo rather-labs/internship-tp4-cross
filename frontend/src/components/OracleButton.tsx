@@ -234,13 +234,7 @@ export default function OracleButton() {
                 ? `Switch network to wait for finality, to: ${CHAIN_NAMES[blockchains[(moveNumber + 1) % 2] as keyof typeof CHAIN_NAMES]}`
                 : "On the right chain to call the Oracle"}
         </button>
-        <Tooltip
-          content="The next step is to call the Relayer to push our move to the destination blockchain. Let's go!"
-          link={{
-            href: "https://docs.axsdasdsadsadelar.dev/",
-            text: "Learn More",
-          }}
-        />
+        <Tooltip content="You have to be in the message sender chain to listen current block number and in the destintation chain to transfer the validation data" />
       </div>
 
       {/* Oracle button */}
@@ -269,13 +263,7 @@ export default function OracleButton() {
               "Call Oracle"
             )}
           </button>
-          <Tooltip
-            content="The next step is to call the Relayer to push our move to the destination blockchain. Let's go!"
-            link={{
-              href: "https://docs.axsdasdsadsadelar.dev/",
-              text: "Learn More",
-            }}
-          />
+          <Tooltip content="Now you can push the validation data to the destination blockchain. Let's go!" />
         </div>
       )}
 

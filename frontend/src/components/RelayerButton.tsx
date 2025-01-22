@@ -115,39 +115,46 @@ export default function RelayerButton() {
     <div className="p-4 rounded-lg bg-[#ffffff]">
       <div className="flex flex-col space-y-4">
         <div className="flex flex-col justify-center items-center space-y-4">
-          <button
-            className={`px-8 py-4 rounded-xl text-xl font-bold transition-all transform hover:scale-105 shadow-lg text-white ${
-              isPending ||
+          <div className="flex flex-row justify-center items-center space-x-4">
+            <button
+              className={`px-8 py-4 rounded-xl text-xl font-bold transition-all transform hover:scale-105 shadow-lg text-white ${
+                isPending ||
+                inboundingMsgs ||
+                (isSuccess && gameState !== "RELAYER_FINISHED") ||
+                chainId != blockchains[moveNumber % 2]
+                  ? "bg-gray-400 cursor-not-allowed"
+                  : "bg-[#F6851B] hover:bg-[#E2761B]"
+              }`}
+              onClick={() => handleInboundMsgs()}
+              disabled={
+                isPending ||
+                inboundingMsgs ||
+                (isSuccess && gameState !== "RELAYER_FINISHED") ||
+                chainId != blockchains[moveNumber % 2]
+              }
+            >
+              {isPending ||
               inboundingMsgs ||
-              (isSuccess && gameState !== "RELAYER_FINISHED") ||
-              chainId != blockchains[moveNumber % 2]
-                ? "bg-gray-400 cursor-not-allowed"
-                : "bg-[#F6851B] hover:bg-[#E2761B]"
-            }`}
-            onClick={() => handleInboundMsgs()}
-            disabled={
-              isPending ||
-              inboundingMsgs ||
-              (isSuccess && gameState !== "RELAYER_FINISHED") ||
-              chainId != blockchains[moveNumber % 2]
-            }
-          >
-            {isPending ||
-            inboundingMsgs ||
-            (isSuccess && gameState !== "RELAYER_FINISHED") ? (
-              <div className="flex items-center justify-center">
-                <div className="animate-spin rounded-full h-6 w-6 border-b-2 border-white"></div>
-              </div>
-            ) : chainId != blockchains[moveNumber % 2] ? (
-              `Switch network to: ${CHAIN_NAMES[blockchains[moveNumber % 2] as keyof typeof CHAIN_NAMES]}`
-            ) : (
-              "Call Relayer"
-            )}
-          </button>
-          <p className="text-sm text-gray-500">
-            This action will manually push the messages that have reached
-            finality, as if it was a Relayer.
-          </p>
+              (isSuccess && gameState !== "RELAYER_FINISHED") ? (
+                <div className="flex items-center justify-center">
+                  <div className="animate-spin rounded-full h-6 w-6 border-b-2 border-white"></div>
+                </div>
+              ) : chainId != blockchains[moveNumber % 2] ? (
+                `Switch network to: ${CHAIN_NAMES[blockchains[moveNumber % 2] as keyof typeof CHAIN_NAMES]}`
+              ) : (
+                "Call Relayer"
+              )}
+            </button>
+
+            <Tooltip
+              content="You will act as a Relayer, manually pushing the messages that have reached finality to
+            the destination blockchain."
+              link={{
+                href: "https://docs.axsdasdsadsadelar.dev/",
+                text: "Learn More",
+              }}
+            />
+          </div>
         </div>
         {writeError && (
           <div className="p-4 bg-red-100 border border-red-400 text-red-700 rounded">

@@ -63,13 +63,16 @@ function App() {
           </h2>
           <>
             <p className="text-xl text-[#6A737D] max-w-2xl mx-auto text-justify">
-              This game app is a proof of concept for R-Cross, a cross-chain
-              communication protocol developed by Rather Labs Innovation
-              Department. <br />
-              This protocol can be used to send arbitrary data across two
-              different blockchains, utilizing a proof of inclusion strategy to
-              assure the authenticity and integrity of the message. Here we use
-              it to play rock-paper-scissor across blockchains.
+              &nbsp;&nbsp;&nbsp;&nbsp;This game app is a proof of concept for a
+              cross-chain communication protocol developed by{" "}
+              <a href="https://ratherlabs.com">RatherLabs</a>
+              . <br />
+              &nbsp;&nbsp;&nbsp;&nbsp;This protocol can be used to send
+              arbitrary data across two different blockchains, utilizing an on
+              chain inclusion proof verification to assure the authenticity and
+              integrity of the message. <br />
+              &nbsp;&nbsp;&nbsp;&nbsp;In this demonstration, we use it to play
+              rock-paper-scissors across blockchains.
             </p>
             <a href={"kk"} className="text-[#037DD6] hover:text-[#0260A4]">
               Learn More
@@ -98,7 +101,7 @@ function App() {
           {[
             {
               title: "Cross-Chain Protocol and Game Article",
-              desc: "Learn more about the protocol and game works",
+              desc: "Learn more about the protocol and how the game works",
               link: "https://docs.crosschainrps.com",
             },
           ].map((feature, i) => (

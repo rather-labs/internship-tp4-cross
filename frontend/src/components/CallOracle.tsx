@@ -1,30 +1,90 @@
 import { useGame } from "@/contexts/GameContext";
 import OracleButton from "./OracleButton";
+import { Tooltip } from "./Tooltip";
+import { BLOCKS_FOR_FINALITY } from "@/utils/ContractInfo";
 
 export function CallOracle() {
   const { finalitySpeed, moveBlockNumber } = useGame();
 
   return (
     <div className="space-y-8">
-      <h2 className="text-3xl font-bold mb-8">Oracle Setup Required</h2>
+      <h2 className="text-3xl font-bold mb-8">Oracle Action Required</h2>
 
       <div className="space-y-6">
         <div className="border-2 border-gray-300 bg-white shadow-lg p-6 rounded-xl mb-8">
-          <p className="text-sm text-justify">
-            You already signed the transaction for your move. Now the next step we need to do is to call the Oracle. The Oracle is used by the 
-            protocol to acquire the necessary information in order to validate on the destination chain the move made on the source chain. 
-            To ensure finality, the Oracle will wait a number of blocks for finality before pushing the validation information (Finality Block Number and Receipt Trie) to
-            the destination chain. Then it will push the information to the protocol on the destination chian.<br/><br/>
-            In this app, we will run the Oracle from the frontend for demonstration purposes. To carry on the Oracle task, 
-            we first need to change the network to the destination one, so we can push the validation elements to the protocol on the other chain. Then, when finality has been achieved, we will need to sign a 
-            transaction that contains the data of the validation elements to push this information to the protocol. The buttons below  will be available once finality has been achieved.
+          <div className="flex flex-row space-y-4"></div>
+          <p className="text-m text-gray-600">
+            Great! You've succesfully made your move. <br />
+            The next step is to call the Oracle to send validation data for this
+            move.
           </p>
-          <p className="text-xl mt-4">Selected Speed: {finalitySpeed}</p>
-          <p className="text-xl mb-4">
-            {moveBlockNumber !== null
-              ? `Starting Block Number: ${moveBlockNumber}`
-              : "Waiting for block number..."}
+
+          <Tooltip
+            content="The Oracle sends validation data for messages between chains. 
+                     It waits for a set number of block confirmations
+                     to ensure finality, then pushes two key pieces of information to the destination
+                     chain: the current block Number and Receipt Trie root for the block in which 
+                     the message was included.
+                     "
+            link={{
+              href: "https://docs.axsdasdsadsadelar.dev/",
+              text: "Learn More",
+            }}
+          />
+
+          <p className="text-m text-gray-600">
+            For this demonstration, you'll act as the Oracle through your
+            browser. <br />
+            This involves two steps: <br />
+            1. Switch to the destination network to prepare for validation{" "}
+            <br />
+            2. Once finality is achieved, sign a transaction containing the
+            validation data
           </p>
+
+          <Tooltip
+            content="In a production environment, the Oracle service would be operated by a trusted
+               third party to ensure security and reliability. 
+               This third party would be responsible for providing accurate blockchain
+               data across networks."
+            link={{
+              href: "https://docs.axsdasdsadsadelar.dev/",
+              text: "Learn More",
+            }}
+          />
+
+          <div className="flex justify-between items-center mt-6 mb-4">
+            <div className="bg-blue-100 p-4 rounded-lg flex-1 mr-4">
+              <p className="text-sm text-gray-600 mb-1">Selected Speed</p>
+              <p className="text-2xl font-bold text-blue-800">
+                {finalitySpeed
+                  ? finalitySpeed +
+                    " (" +
+                    BLOCKS_FOR_FINALITY[
+                      finalitySpeed as keyof typeof BLOCKS_FOR_FINALITY
+                    ] +
+                    " block" +
+                    (BLOCKS_FOR_FINALITY[
+                      finalitySpeed as keyof typeof BLOCKS_FOR_FINALITY
+                    ] > 1
+                      ? "s"
+                      : "") +
+                    ")"
+                  : "Not Selected"}
+              </p>
+            </div>
+
+            <div className="bg-blue-100  p-4 rounded-lg flex-1">
+              <p className="text-sm text-gray-600 mb-1">Confirmation Block</p>
+              <p className="text-2xl font-bold text-blue-800">
+                {moveBlockNumber !== null ? (
+                  `#${moveBlockNumber}`
+                ) : (
+                  <span className="text-yellow-600">Pending...</span>
+                )}
+              </p>
+            </div>
+          </div>
         </div>
         <OracleButton />
       </div>

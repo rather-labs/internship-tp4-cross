@@ -17,10 +17,11 @@ export function Transition() {
   if (result !== null) {
     return (
       <div className="flex flex-col space-y-8 items-center justify-center">
-        <h2 className="text-3xl font-bold mb-8">
+        <h2 className="text-3xl font-bold mb-8">Game Finished!</h2>
+        <p className="text-m text-gray-600">
           The result of the game has been succesfully sent to the source
           blockchain.
-        </h2>
+        </p>
         <button
           className="bg-[#F6851B] hover:bg-[#E2761B] px-8 py-4 rounded-xl text-2xl font-bold transition-all transform hover:scale-105 shadow-lg text-white"
           onClick={() => {
@@ -35,10 +36,11 @@ export function Transition() {
 
   return (
     <div className="flex flex-col space-y-8 items-center justify-center">
-      <h2 className="text-3xl font-bold mb-8">
+      <h2 className="text-3xl font-bold mb-8">Move Sent!</h2>
+      <p className="text-m text-gray-600">
         Player {currentPlayer}'s move has been sent to the game contract in the
         destination blockchain.
-      </h2>
+      </p>
       <button
         className="bg-[#F6851B] hover:bg-[#E2761B] px-8 py-4 rounded-xl text-2xl font-bold transition-all transform hover:scale-105 shadow-lg text-white"
         onClick={() => {
