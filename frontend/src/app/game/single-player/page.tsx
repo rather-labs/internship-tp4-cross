@@ -13,11 +13,12 @@ import { CallRelayer } from "@/components/CallRelayer";
 import { SpeedSelection } from "@/components/SpeedSelection";
 import { RestartGame } from "@/components/RestartGame";
 import { ShowResult } from "@/components/ShowResult";
+import { BetSelection } from "@/components/BetSelection";
 
 export default function SinglePlayerGame() {
   const router = useRouter();
   const account = useAccount();
-  const { finalitySpeed, gameState, players } = useGame();
+  const { finalitySpeed, gameState, players, bets } = useGame();
 
   // Redirect if not connected
   useEffect(() => {
@@ -48,6 +49,10 @@ export default function SinglePlayerGame() {
 
     if (!finalitySpeed) {
       return <SpeedSelection />;
+    }
+
+    if (bets[0] < 0) {
+      return <BetSelection />;
     }
 
     if (gameState === "WAITING_RESULT") {

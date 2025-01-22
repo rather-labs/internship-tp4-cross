@@ -185,24 +185,17 @@ export default function Relayer() {
     setResult(GameResultsArray[Number(log.args.finishedGame.result) - 1]);
   };
 
-  //check if useWatchContractEvent requires third party rpc's can't be used for tutorial implementation
+  //TODO: check if useWatchContractEvent requires third party rpc's can't be used for tutorial implementation
   useWatchContractEvent({
     address: incomingAddress,
     abi: JSON.parse(CONTRACT_ABIS["incoming"]),
     eventName: "InboundMessagesRes",
     pollingInterval: 10_000,
     onLogs(logs: any) {
-      console.log(
-        "Received InboundMessagesRes logs on chainId ",
-        chainId,
-        ":",
-        logs
-      );
       handleMsgDelivered(logs[0]);
     },
   });
 
-  //check if useWatchContractEvent requires third party rpc's can't be used for tutorial implementation
   useWatchContractEvent({
     address: outgoingAddress,
     abi: JSON.parse(CONTRACT_ABIS["outgoing"]),
@@ -213,7 +206,6 @@ export default function Relayer() {
     },
   });
 
-  //check if useWatchContractEvent requires third party rpc's can't be used for tutorial implementation
   useWatchContractEvent({
     address: gameAddress,
     abi: JSON.parse(CONTRACT_ABIS["game"]),
@@ -224,7 +216,6 @@ export default function Relayer() {
     },
   });
 
-  //check if useWatchContractEvent requires third party rpc's can't be used for tutorial implementation
   useWatchContractEvent({
     address: gameAddress,
     abi: JSON.parse(CONTRACT_ABIS["game"]),

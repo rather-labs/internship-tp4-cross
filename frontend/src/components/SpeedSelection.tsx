@@ -18,7 +18,8 @@ export function SpeedSelection() {
             >
               finality
             </a>{" "}
-            for the source blockchain. We simplified this down to two choices.
+            for the source blockchain. In the context of this game, we
+            simplified this down to two choices.
           </p>
           <p className="text-m text-gray-600">
             Fast: Wait less blocks, quicker finality, less confidence

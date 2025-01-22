@@ -39,6 +39,8 @@ interface GameContextType {
   setCurrentPlayer: (player: number) => void;
   moveNumber: number;
   setMoveNumber: (value: number) => void;
+  bets: number[];
+  setBets: (bets: number[]) => void;
   gameState: GameMoveStates;
   setGameState: (state: GameMoveStates) => void;
   restartGame: () => void;
@@ -59,6 +61,7 @@ interface StoredGameState {
   players: (string | undefined)[];
   currentPlayer: number;
   moveNumber: number;
+  bets: number[];
   gameState: GameMoveStates;
   result: GameResults;
 }
@@ -71,6 +74,7 @@ const initialState: StoredGameState = {
   players: [undefined, undefined],
   currentPlayer: 1,
   moveNumber: 0,
+  bets: [-1, -1],
   gameState: "PLAYING",
   result: null,
 };
@@ -96,6 +100,7 @@ export function GameProvider({ children }: { children: ReactNode }) {
 
   const [currentPlayer, setCurrentPlayer] = useState(storedState.currentPlayer);
   const [moveNumber, setMoveNumber] = useState(storedState.moveNumber);
+  const [bets, setBets] = useState(storedState.bets);
   const [gameState, setGameState] = useState<GameMoveStates>(
     storedState.gameState
   );
@@ -109,6 +114,7 @@ export function GameProvider({ children }: { children: ReactNode }) {
     setPlayers(initialState.players);
     setCurrentPlayer(initialState.currentPlayer);
     setMoveNumber(initialState.moveNumber);
+    setBets(initialState.bets);
     setGameState(initialState.gameState);
     setResult(initialState.result);
   }
@@ -123,6 +129,7 @@ export function GameProvider({ children }: { children: ReactNode }) {
       players,
       currentPlayer,
       moveNumber,
+      bets,
       gameState,
       result,
     });
@@ -134,7 +141,9 @@ export function GameProvider({ children }: { children: ReactNode }) {
     players,
     currentPlayer,
     moveNumber,
+    bets,
     gameState,
+    result,
   ]);
 
   return (
@@ -154,6 +163,8 @@ export function GameProvider({ children }: { children: ReactNode }) {
         setCurrentPlayer,
         moveNumber,
         setMoveNumber,
+        bets,
+        setBets,
         gameState,
         setGameState,
         restartGame,

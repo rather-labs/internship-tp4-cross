@@ -19,7 +19,6 @@ import { waitForTransactionReceipt } from "wagmi/actions";
 import { useChainData } from "../contexts/ChainDataContext";
 import { useGame } from "../contexts/GameContext";
 import { Tooltip } from "./Tooltip";
-
 type ChainAddresses = (typeof CONTRACT_ADDRESSES)["outgoing"];
 
 export default function OracleButton() {
@@ -94,6 +93,9 @@ export default function OracleButton() {
   }, [blockNumber, moveBlockNumber, finalitySpeed]);
 
   const handleInboundBlockNumbers = async () => {
+    if (chainId === undefined) {
+      return;
+    }
     for (const chain of SUPPORTED_CHAINS) {
       if (chain === chainId || chainData[chain] === undefined) {
         continue;
@@ -109,7 +111,9 @@ export default function OracleButton() {
           hash: txHash,
         });
         if (txReceipt.status === "reverted") {
-          throw new Error("Transaction Recepit status returned as reverted");
+          throw new Error(
+            "Transaction Recepit for blocknumber status returned as reverted"
+          );
         }
       } catch (error: any) {
         console.error("Error setting blocknumber:", error);
@@ -139,7 +143,9 @@ export default function OracleButton() {
           hash: txHash,
         });
         if (txReceipt.status === "reverted") {
-          throw new Error("Transaction Recepit status returned as reverted");
+          throw new Error(
+            "Transaction Recepit for receipt trie root status returned as reverted"
+          );
         }
 
         // Remove the sent root

@@ -1,13 +1,20 @@
 import { Tooltip } from "./Tooltip";
 import { useGame } from "../contexts/GameContext";
 import { useAccount, useConfig, useWriteContract } from "wagmi";
-import { BLOCKS_FOR_FINALITY, CONTRACT_ABIS } from "@/utils/ContractInfo";
+import {
+  BLOCKS_FOR_FINALITY,
+  CONTRACT_ABIS,
+  CHAIN_COINGECKO_IDS,
+  CHAIN_DECIMALS,
+} from "@/utils/ContractInfo";
 import { CHAIN_NAMES, CHAIN_IDS } from "@/utils/ContractInfo";
 import toast from "react-hot-toast";
 import { useState } from "react";
 import { CONTRACT_ADDRESSES } from "@/utils/ContractInfo";
 import { waitForTransactionReceipt } from "wagmi/actions";
 import { useChainData } from "@/contexts/ChainDataContext";
+import { parseUnits } from "viem";
+import axios from "axios";
 
 const moveToNumber: { [key: string]: number } = {
   Rock: 1,
@@ -20,6 +27,7 @@ export function MoveSelection() {
     writeContractAsync: writeContract,
     error: errorGameMove,
     isPending: isPendingGameMove,
+    isSuccess: isSuccessGameMove,
   } = useWriteContract();
 
   const [waitingForTxReceipt, setWaitingForTxReceipt] = useState(false);
@@ -42,7 +50,30 @@ export function MoveSelection() {
     blockchains,
     setCurrentPlayer,
     currentPlayer,
+    bets,
+    setBets,
   } = useGame();
+
+  const fetchPrice = async (tokenChainId: number) => {
+    try {
+      const response = await axios.get(
+        `https://api.coingecko.com/api/v3/simple/price`,
+        {
+          params: {
+            ids: CHAIN_COINGECKO_IDS[
+              tokenChainId as keyof typeof CHAIN_COINGECKO_IDS
+            ], // Coingecko token ID, e.g., 'ethereum'
+            vs_currencies: "usd",
+          },
+        }
+      );
+      return response.data[
+        CHAIN_COINGECKO_IDS[tokenChainId as keyof typeof CHAIN_COINGECKO_IDS]
+      ].usd;
+    } catch (error) {
+      console.error("Error fetching token price:", error);
+    }
+  };
 
   const handleFirstMove = async (choice: string) => {
     try {
@@ -51,6 +82,10 @@ export function MoveSelection() {
         chainId === CHAIN_IDS.localhost_1
           ? CHAIN_IDS.localhost_2
           : CHAIN_IDS.localhost_1;
+      // Determine bet amount for player 2 acording to current conversion rate
+      const destinationPrice = await fetchPrice(destinationChainId);
+      const sourcePrice = await fetchPrice(chainId as number);
+      setBets([bets[0], (bets[0] * sourcePrice) / destinationPrice]);
       const txHash = await writeContract({
         address: CONTRACT_ADDRESSES["game"][
           CHAIN_NAMES[
@@ -64,8 +99,17 @@ export function MoveSelection() {
           destinationChainId,
           moveToNumber[choice], // move
           finalitySpeed ? BLOCKS_FOR_FINALITY[finalitySpeed] : 1,
+          parseUnits(
+            ((bets[0] * sourcePrice) / destinationPrice).toString(),
+            CHAIN_DECIMALS[chainId as keyof typeof CHAIN_DECIMALS]
+          ),
         ],
+        value: parseUnits(
+          bets[0].toString(),
+          CHAIN_DECIMALS[chainId as keyof typeof CHAIN_DECIMALS]
+        ),
       });
+
       setWaitingForTxReceipt(true);
       const txReceipt = await waitForTransactionReceipt(config, {
         hash: txHash,
@@ -79,7 +123,6 @@ export function MoveSelection() {
       setMoveNumber(1);
       setCurrentPlayer(1);
       setMoveBlockNumber(Number(txReceipt.blockNumber));
-      setWaitingForTxReceipt(false);
       setGameState("WAITING_ORACLE");
     } catch (error: any) {
       toast.error("Failed to start game. Please try again.", {
@@ -93,10 +136,10 @@ export function MoveSelection() {
       });
       console.error("Error submitting move:", error);
     }
+    setWaitingForTxReceipt(false);
   };
 
   const handleSecondMove = async (choice: string) => {
-    setWaitingForTxReceipt(true);
     try {
       const txHash = await writeContract({
         address: CONTRACT_ADDRESSES["game"][
@@ -111,7 +154,13 @@ export function MoveSelection() {
           blockchains[0] as number,
           moveToNumber[choice], // move
         ],
+        value: parseUnits(
+          bets[1].toString(),
+          CHAIN_DECIMALS[chainId as keyof typeof CHAIN_DECIMALS]
+        ),
       });
+
+      setWaitingForTxReceipt(true);
       const txReceipt = await waitForTransactionReceipt(config, {
         hash: txHash,
       });
