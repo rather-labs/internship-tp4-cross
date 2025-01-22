@@ -192,8 +192,12 @@ export default function OracleButton() {
             </p>
             <p className="text-sm text-gray-500">
               {finalitySpeed === "FAST"
-                ? `Fast mode requires ${BLOCKS_FOR_FINALITY["FAST"]} block confirmations, please wait...`
-                : `Slow mode requires ${BLOCKS_FOR_FINALITY["SLOW"]} block confirmations, please wait...`}
+                ? `Fast mode requires ${BLOCKS_FOR_FINALITY["FAST"]} block${
+                    BLOCKS_FOR_FINALITY["FAST"] > 1 ? "s" : ""
+                  } confirmations, please wait...`
+                : `Slow mode requires ${BLOCKS_FOR_FINALITY["SLOW"]} block${
+                    BLOCKS_FOR_FINALITY["SLOW"] > 1 ? "s" : ""
+                  } confirmations, please wait...`}
             </p>
           </>
         ) : (

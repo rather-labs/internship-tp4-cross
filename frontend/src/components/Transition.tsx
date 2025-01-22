@@ -15,6 +15,7 @@ export function Transition() {
   const router = useRouter();
 
   if (result !== null) {
+    setGameState("FINISHED");
     return (
       <div className="flex flex-col space-y-8 items-center justify-center">
         <h2 className="text-3xl font-bold mb-8">Game Finished!</h2>

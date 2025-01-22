@@ -43,7 +43,7 @@ export default function SinglePlayerGame() {
     if (gameState === "WAITING_RELAYER" || gameState === "RELAYER_FINISHED") {
       return <CallRelayer />;
     }
-    if (gameState === "TRANSITION") {
+    if (gameState === "TRANSITION" || gameState === "FINISHED") {
       return <Transition />;
     }
 

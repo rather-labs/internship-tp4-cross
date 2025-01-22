@@ -30,7 +30,7 @@ export default function Relayer() {
 
   const { state: chainData, dispatch } = useChainData();
 
-  const { setGameState, setGameId, setResult } = useGame();
+  const { gameState, setGameState, setGameId, setResult } = useGame();
 
   let config = useConfig();
 
@@ -155,6 +155,9 @@ export default function Relayer() {
   const handleMsgDelivered = async (log: any) => {
     console.log("Relayer: handleMsgDelivered", " | chainId ", chainId);
     console.log("event", log.args);
+    if (gameState === "FINISHED") {
+      return;
+    }
     // Remove delivered messages from chainData
     setGameState("RELAYER_FINISHED");
     for (const [index, msgNumber] of log.args.inboundMessageNumbers.entries()) {
