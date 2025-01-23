@@ -1,4 +1,4 @@
 
 [package]
-name = "circuit"
+name = "RockPaperScissors"
 type = "bin"

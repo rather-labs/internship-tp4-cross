@@ -1,3 +1,4 @@
+import { ProofData } from "@aztec/bb.js";
 import { createContext, useContext } from "react";
 
 export type GameMoveStates =
@@ -7,6 +8,7 @@ export type GameMoveStates =
   | "WAITING_RELAYER"
   | "RELAYER_FINISHED"
   | "TRANSITION"
+  | "WAITING_PROOF_VERIFICATION"
   | "WAITING_REVEAL"
   | "WAITING_RESULT"
   | "FINISHED";
@@ -44,6 +46,8 @@ interface GameContextType {
   setPlayer1Move: (move: number) => void;
   player1Nonce: number;
   setPlayer1Nonce: (nonce: number) => void;
+  proof: ProofData | null;
+  setProof: (proof: ProofData | null) => void;
 }
 
 export const GameContext = createContext<GameContextType | undefined>(
@@ -64,6 +68,7 @@ export interface StoredGameState {
   result: GameResults;
   player1Move: number;
   player1Nonce: number;
+  proof: ProofData | null;
 }
 
 export function useGame() {

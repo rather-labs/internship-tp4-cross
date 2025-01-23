@@ -17,6 +17,8 @@ import { toBytes, parseUnits } from "viem";
 import axios from "axios";
 import { keccak256 } from "viem/utils";
 import { concatBytes } from "@ethereumjs/util";
+import { generateProof, noir_return_value_to_hex } from "../utils/noir";
+import { InputValue } from "@noir-lang/noirc_abi";
 
 export function MoveSelection() {
   const {
@@ -51,6 +53,7 @@ export function MoveSelection() {
     setBets,
     setPlayer1Move,
     setPlayer1Nonce,
+    setProof,
   } = useGame();
 
   async function fetchPrice(tokenChainId: number) {
@@ -90,9 +93,10 @@ export function MoveSelection() {
       const sourcePrice = await fetchPrice(chainId as number);
       setBets([bets[0], (bets[0] * sourcePrice) / destinationPrice]);
 
-      const moveHash = keccak256(
-        concatBytes(toBytes(moveToNumber(choice)), padBytes(toBytes(nonce), 32))
-      );
+      const { returnValue, proof } = (await generateProof(
+        moveToNumber(choice),
+        Array.from(padBytes(toBytes(nonce), 32))
+      )) ?? { returnValue: null, proof: null };
 
       const txHash = await writeContract({
         address: CONTRACT_ADDRESSES["game"][
@@ -105,7 +109,7 @@ export function MoveSelection() {
         args: [
           address as `0x${string}`, // player2 (in single player, same as player1)
           destinationChainId,
-          moveHash,
+          noir_return_value_to_hex(returnValue as InputValue),
           finalitySpeed ? BLOCKS_FOR_FINALITY[finalitySpeed] : 1,
           parseUnits(
             ((bets[0] * sourcePrice) / destinationPrice).toString(),
@@ -133,6 +137,7 @@ export function MoveSelection() {
       setMoveBlockNumber(Number(txReceipt.blockNumber));
       setPlayer1Move(moveToNumber(choice));
       setPlayer1Nonce(nonce);
+      setProof(proof);
       setGameState("WAITING_ORACLE");
     } catch (error) {
       toast.error("Failed to start game. Please try again.", {
@@ -227,6 +232,8 @@ export function MoveSelection() {
                   type="number"
                   id="betAmount"
                   className="border border-gray-300 rounded px-3 py-2 w-32"
+                  min="0"
+                  max="18446744073709551615" // 2^64 - 1 - max value for u64
                   step="1"
                   value={nonce.toString()}
                   onChange={(e) => setNonce(Number(e.target.value))}

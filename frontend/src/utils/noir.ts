@@ -1,6 +1,7 @@
 import { compile, createFileManager } from "@noir-lang/noir_wasm";
-import { UltraHonkBackend } from "@aztec/bb.js";
+import { ProofData, UltraHonkBackend } from "@aztec/bb.js";
 import { Noir } from "@noir-lang/noir_js";
+import { InputValue } from '@noir-lang/noirc_abi';
 import toast from "react-hot-toast";
 
 import main from "../circuit/src/main.nr?url";
@@ -16,27 +17,55 @@ export async function getCircuit() {
 	}
 	fm.writeFile("./src/main.nr", mainBody);
 	fm.writeFile("./Nargo.toml", nargoTomlBody);
-	
-	// Print file contents
+
 	const circuit = await compile(fm);
 	return circuit;
 }
 
-export default async function generateProof(age: number) {
+export async function generate_backend() {
+	toast.success("Generating backend	... ⏳");
+	const { program } = await getCircuit();
+	const noir = new Noir(program);
+	const backend = new UltraHonkBackend(program.bytecode);
+	toast.success("Generated backend... ✅");
+	return { noir, backend };
+}
+
+export async function generateProof(move: number, nonce: number[]) {
 	try {
+		toast.success("Generating noir backend... ⏳");
 		const { program } = await getCircuit();
 		const noir = new Noir(program);
 		const backend = new UltraHonkBackend(program.bytecode);
-		toast.success("Generating witness... ⏳");
-		const { witness } = await noir.execute({ age });
-		toast.success("Generated witness... ✅");
-		toast.success("Generating proof... ⏳");
+		const { witness, returnValue } = await noir.execute({ move, nonce });
+		toast.success("Generating noir proof... ⏳");
 		const proof = await backend.generateProof(witness);
-		toast.success("Generated proof... ✅");
-		toast.success("Verifying proof... ⌛");
+		toast.success("Verifying noir proof... ⌛");
 		const isValid = await backend.verifyProof(proof);
 		toast.success(`Proof is ${isValid ? "valid" : "invalid"}... ✅`);
+		return { returnValue, proof};
 	} catch (err) {
 		toast.error(`${err}`);
 	}
+}
+
+
+export async function verifyProof(proof: ProofData) {
+	try {
+		toast.success("Generating noir backend... ⏳");
+		const { program } = await getCircuit();
+		const backend = new UltraHonkBackend(program.bytecode);
+		toast.success("Verifying proof... ⌛");
+		const isValid = await backend.verifyProof(proof);
+		toast.success(`Proof is ${isValid ? "valid" : "invalid"}... ✅`);
+		return isValid;
+	} catch (err) {
+		toast.error(`${err}`);
+	}
+}
+
+export function noir_return_value_to_hex(returnValue: InputValue) {
+	return "0x" + Array.from(returnValue as string[])
+            .map((b: string) => Number(b).toString(16).padStart(2, "0"))
+            .join("");
 }

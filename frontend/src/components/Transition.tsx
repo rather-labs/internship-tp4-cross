@@ -44,7 +44,9 @@ export function Transition() {
         onClick={() => {
           setMoveNumber(moveNumber + 1);
           setCurrentPlayer(currentPlayer === 1 ? 2 : 1);
-          setGameState(moveNumber === 1 ? "PLAYING" : "WAITING_REVEAL");
+          setGameState(
+            moveNumber === 1 ? "WAITING_PROOF_VERIFICATION" : "WAITING_REVEAL"
+          );
         }}
       >
         {moveNumber === 1 ? "Start Player 2's Turn" : "Reveal Player 1's Move"}

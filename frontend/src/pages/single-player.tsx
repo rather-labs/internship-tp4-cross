@@ -13,6 +13,7 @@ import { RestartGame } from "../components/RestartGame";
 import { ShowResult } from "../components/ShowResult";
 import { BetSelection } from "../components/BetSelection";
 import { RevealMove } from "../components/RevealMove";
+import { VerifyProof } from "../components/VerifyProof";
 
 export default function SinglePlayerGame() {
   const navigate = useNavigate();
@@ -44,6 +45,10 @@ export default function SinglePlayerGame() {
     }
     if (gameState === "TRANSITION" || gameState === "FINISHED") {
       return <Transition />;
+    }
+
+    if (gameState === "WAITING_PROOF_VERIFICATION") {
+      return <VerifyProof />;
     }
 
     if (!finalitySpeed) {

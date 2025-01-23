@@ -2,6 +2,7 @@ import { useState, ReactNode, useEffect } from "react";
 import { getData, storeData } from "../utils/StoreData";
 import { GameContext, GameResults, StoredGameState } from "./GameContext";
 import { GameMoveStates } from "./GameContext";
+import { ProofData } from "@aztec/bb.js";
 
 const initialState: StoredGameState = {
   gameId: 0,
@@ -16,6 +17,7 @@ const initialState: StoredGameState = {
   result: null,
   player1Move: 0,
   player1Nonce: 0,
+  proof: null,
 };
 
 export function GameProvider({ children }: { children: ReactNode }) {
@@ -46,6 +48,7 @@ export function GameProvider({ children }: { children: ReactNode }) {
   const [result, setResult] = useState<GameResults>(storedState.result);
   const [player1Move, setPlayer1Move] = useState(storedState.player1Move);
   const [player1Nonce, setPlayer1Nonce] = useState(storedState.player1Nonce);
+  const [proof, setProof] = useState<ProofData | null>(storedState.proof);
 
   function restartGame() {
     setGameId(initialState.gameId);
@@ -60,6 +63,7 @@ export function GameProvider({ children }: { children: ReactNode }) {
     setResult(initialState.result);
     setPlayer1Move(initialState.player1Move);
     setPlayer1Nonce(initialState.player1Nonce);
+    setProof(initialState.proof);
   }
 
   // Save state changes to localStorage
@@ -77,6 +81,7 @@ export function GameProvider({ children }: { children: ReactNode }) {
       result,
       player1Move,
       player1Nonce,
+      proof,
     });
   }, [
     gameId,
@@ -91,6 +96,7 @@ export function GameProvider({ children }: { children: ReactNode }) {
     result,
     player1Move,
     player1Nonce,
+    proof,
   ]);
 
   return (
@@ -121,6 +127,8 @@ export function GameProvider({ children }: { children: ReactNode }) {
         setPlayer1Move,
         player1Nonce,
         setPlayer1Nonce,
+        proof,
+        setProof,
       }}
     >
       {children}
