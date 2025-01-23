@@ -1,3 +1,4 @@
+/* eslint-disable @typescript-eslint/no-explicit-any */
 import { createMPT, verifyMerkleProof, createMerkleProof } from '@ethereumjs/mpt'
 import { MapDB, hexToBytes, concatBytes, bigIntToBytes } from '@ethereumjs/util'
 import { RLP } from '@ethereumjs/rlp'

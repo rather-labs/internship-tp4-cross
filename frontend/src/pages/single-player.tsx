@@ -1,32 +1,30 @@
-"use client";
-
 import { useAccount } from "wagmi";
 import { useEffect } from "react";
-import { useRouter } from "next/navigation";
+import { useNavigate } from "react-router-dom";
 import { Toaster } from "react-hot-toast";
-import { CallOracle } from "@/components/CallOracle";
-import { Transition } from "@/components/Transition";
-import { MoveSelection } from "@/components/MoveSelection";
-import { Header } from "@/components/Header";
-import { useGame } from "@/contexts/GameContext";
-import { CallRelayer } from "@/components/CallRelayer";
-import { SpeedSelection } from "@/components/SpeedSelection";
-import { RestartGame } from "@/components/RestartGame";
-import { ShowResult } from "@/components/ShowResult";
-import { BetSelection } from "@/components/BetSelection";
-import { RevealMove } from "@/components/RevealMove";
+import { CallOracle } from "../components/CallOracle";
+import { Transition } from "../components/Transition";
+import { MoveSelection } from "../components/MoveSelection";
+import { Header } from "../components/Header";
+import { useGame } from "../contexts/GameContext";
+import { CallRelayer } from "../components/CallRelayer";
+import { SpeedSelection } from "../components/SpeedSelection";
+import { RestartGame } from "../components/RestartGame";
+import { ShowResult } from "../components/ShowResult";
+import { BetSelection } from "../components/BetSelection";
+import { RevealMove } from "../components/RevealMove";
 
 export default function SinglePlayerGame() {
-  const router = useRouter();
+  const navigate = useNavigate();
   const account = useAccount();
   const { finalitySpeed, gameState, players, bets } = useGame();
 
   // Redirect if not connected
   useEffect(() => {
     if (account.status !== "connected" && !account.isConnecting) {
-      router.push("/");
+      navigate("/");
     }
-  }, [account.status, router]);
+  }, [account.status, navigate, account.isConnecting]);
 
   const renderGameContent = () => {
     if (

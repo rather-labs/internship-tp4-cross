@@ -7,7 +7,6 @@ import {
   msgRelayer,
   msgReceipt,
 } from "../utils/ContractInfo"; //
-import React from "react";
 import { Address, Hex, toHex } from "viem";
 import { getBlock, getTransactionReceipt } from "wagmi/actions";
 import { useChainData } from "../contexts/ChainDataContext";
@@ -18,13 +17,13 @@ import {
   serializeReceipt,
   txTypes,
   txStatus,
-} from "@/utils/mpt";
+} from "../utils/mpt";
 import { RLP as rlp } from "@ethereumjs/rlp";
 import {
   GameMoveStates,
   GameResultsArray,
   useGame,
-} from "@/contexts/GameContext";
+} from "../contexts/GameContext";
 
 // Ammount of messages required to fill up bus in the taxi/bus logic (and relay them)
 //const BUS_CAPACITY = 10; // not implemented for web demonstration

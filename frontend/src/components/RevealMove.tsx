@@ -1,10 +1,10 @@
-import { useGame } from "@/contexts/GameContext";
+import { useGame } from "../contexts/GameContext";
 import {
   CHAIN_NAMES,
   CONTRACT_ABIS,
   CONTRACT_ADDRESSES,
   gameMoveIndexes,
-} from "@/utils/ContractInfo";
+} from "../utils/ContractInfo";
 import { useState } from "react";
 import { waitForTransactionReceipt } from "wagmi/actions";
 import { useAccount, useConfig, useWriteContract } from "wagmi";
@@ -15,7 +15,6 @@ export function RevealMove() {
     writeContractAsync: writeContract,
     error: errorGameMove,
     isPending: isPendingGameMove,
-    isSuccess: isSuccessGameMove,
   } = useWriteContract();
 
   const [waitingForTxReceipt, setWaitingForTxReceipt] = useState(false);
@@ -61,7 +60,7 @@ export function RevealMove() {
       }
       setMoveBlockNumber(Number(txReceipt.blockNumber));
       setGameState("WAITING_RESULT");
-    } catch (error: any) {
+    } catch (error) {
       toast.error("Failed to submit move. Please try again.", {
         duration: 5000,
         position: "top-center",

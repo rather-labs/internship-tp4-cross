@@ -57,6 +57,7 @@ export function WalletConnection() {
     isConnectSuccess,
     isReconnecting,
     address,
+    disconnect,
   ]);
 
   const metamaskConnector = connectors.find(

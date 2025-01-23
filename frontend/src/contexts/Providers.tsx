@@ -1,13 +1,13 @@
 "use client";
 
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
-import { type ReactNode, useState } from "react";
+import { type ReactNode } from "react";
 import { WagmiProvider } from "wagmi";
 
-import { ChainDataProvider } from "@/contexts/ChainDataContext";
-import { GameProvider } from "@/contexts/GameContext";
+import { ChainDataProvider } from "./ChainDataContextProvider";
+import { GameProvider } from "./GameContextProvider";
 
-import { getConfig } from "@/utils/wagmi";
+import { getConfig } from "../utils/wagmi";
 
 export function Providers({ children }: { children: ReactNode }) {
   const queryClient = new QueryClient();

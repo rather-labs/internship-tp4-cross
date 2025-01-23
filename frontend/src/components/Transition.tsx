@@ -1,6 +1,5 @@
-"use client";
-import { useGame } from "@/contexts/GameContext";
-import { useRouter } from "next/navigation";
+import { useGame } from "../contexts/GameContext";
+import { useNavigate } from "react-router-dom";
 
 export function Transition() {
   const {
@@ -11,7 +10,7 @@ export function Transition() {
     moveNumber,
   } = useGame();
 
-  const router = useRouter();
+  const navigate = useNavigate();
 
   if (moveNumber === 3) {
     return (
@@ -24,7 +23,7 @@ export function Transition() {
         <button
           className="bg-[#F6851B] hover:bg-[#E2761B] px-8 py-4 rounded-xl text-2xl font-bold transition-all transform hover:scale-105 shadow-lg text-white"
           onClick={() => {
-            router.push("/");
+            navigate("/");
           }}
         >
           Go back to home page

@@ -6,13 +6,13 @@ import {
   CONTRACT_ABIS,
   CHAIN_COINGECKO_IDS,
   CHAIN_DECIMALS,
-} from "@/utils/ContractInfo";
-import { CHAIN_NAMES, CHAIN_IDS, moveToNumber } from "@/utils/ContractInfo";
+} from "../utils/ContractInfo";
+import { CHAIN_NAMES, CHAIN_IDS, moveToNumber } from "../utils/ContractInfo";
 import toast from "react-hot-toast";
 import { useState } from "react";
-import { CONTRACT_ADDRESSES } from "@/utils/ContractInfo";
+import { CONTRACT_ADDRESSES } from "../utils/ContractInfo";
 import { waitForTransactionReceipt } from "wagmi/actions";
-import { useChainData } from "@/contexts/ChainDataContext";
+import { useChainData } from "../contexts/ChainDataContext";
 import { toBytes, parseUnits } from "viem";
 import axios from "axios";
 import { keccak256 } from "viem/utils";
@@ -23,7 +23,6 @@ export function MoveSelection() {
     writeContractAsync: writeContract,
     error: errorGameMove,
     isPending: isPendingGameMove,
-    isSuccess: isSuccessGameMove,
   } = useWriteContract();
 
   const [waitingForTxReceipt, setWaitingForTxReceipt] = useState(false);
@@ -135,7 +134,7 @@ export function MoveSelection() {
       setPlayer1Move(moveToNumber(choice));
       setPlayer1Nonce(nonce);
       setGameState("WAITING_ORACLE");
-    } catch (error: any) {
+    } catch (error) {
       toast.error("Failed to start game. Please try again.", {
         duration: 5000,
         position: "top-center",
@@ -180,7 +179,7 @@ export function MoveSelection() {
       }
       setMoveBlockNumber(Number(txReceipt.blockNumber));
       setGameState("WAITING_ORACLE");
-    } catch (error: any) {
+    } catch (error) {
       toast.error("Failed to submit move. Please try again.", {
         duration: 5000,
         position: "top-center",

@@ -1,18 +1,16 @@
-"use client";
-
 import { useAccount, useConnect } from "wagmi";
 import { useEffect } from "react";
-import { useRouter } from "next/navigation";
+import { useNavigate } from "react-router-dom";
 import { Toaster } from "react-hot-toast";
-import { Tooltip } from "@/components/Tooltip";
-import { Header } from "@/components/Header";
-import { useGame } from "@/contexts/GameContext";
-import { useChainData } from "@/contexts/ChainDataContext";
+import { Tooltip } from "../components/Tooltip";
+import { Header } from "../components/Header";
+import { useGame } from "../contexts/GameContext";
+import { useChainData } from "../contexts/ChainDataContext";
 
-function App() {
+export default function Home() {
   const account = useAccount();
   const { connectors, connect } = useConnect();
-  const router = useRouter();
+  const navigate = useNavigate();
   const { restartGame } = useGame();
   const { dispatch } = useChainData();
 
@@ -26,7 +24,7 @@ function App() {
         <div className="ml-6 flex items-center justify-center gap-2">
           <button
             className="bg-[#F6851B] hover:bg-[#E2761B] text-white px-8 py-4 rounded-xl text-xl font-bold transition-all transform hover:scale-105 shadow-lg"
-            onClick={() => router.push("/game/single-player")}
+            onClick={() => navigate("/game/single-player")}
           >
             Start Game
           </button>
@@ -45,7 +43,7 @@ function App() {
   useEffect(() => {
     restartGame();
     dispatch({ type: "RESET" }); // clears chain data
-  }, []);
+  }, [dispatch, restartGame]);
 
   return (
     <div className="min-h-screen bg-[#FFFFFF] text-[#24272A]">
@@ -125,5 +123,3 @@ function App() {
     </div>
   );
 }
-
-export default App;

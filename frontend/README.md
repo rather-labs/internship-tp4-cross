@@ -1,1 +1,13 @@
-This is a [Next.js](https://nextjs.org) project bootstrapped with [`create-wagmi`](https://github.com/wevm/wagmi/tree/main/packages/create-wagmi).
+# Front end for RatherLab's Rock-Paper-Scissors game
+
+## Setup
+
+```bash
+pnpm install
+```
+
+## Run
+
+```bash
+npx vite
+```

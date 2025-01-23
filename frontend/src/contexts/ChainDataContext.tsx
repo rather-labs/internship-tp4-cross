@@ -1,30 +1,7 @@
-import { msgRelayer, SUPPORTED_CHAINS } from "@/utils/ContractInfo";
-import { getData, storeData } from "@/utils/StoreData";
-import {
-  createContext,
-  useContext,
-  useReducer,
-  ReactNode,
-  useEffect,
-} from "react";
+import { msgRelayer, SUPPORTED_CHAINS } from "../utils/ContractInfo";
+import { createContext, useContext } from "react";
 
-interface ChainData {
-  outgoingMsgs: msgRelayer[];
-  receiptTrieRoots: [number, number, string][];
-  blockNumber: number;
-}
-
-const initialChainData: ChainData = {
-  outgoingMsgs: [],
-  receiptTrieRoots: [],
-  blockNumber: 0,
-};
-
-export interface ChainDataState {
-  [chainId: number]: ChainData;
-}
-
-type Action =
+type ChainDataAction =
   | {
       type: "ADD_MESSAGE";
       chainId: number;
@@ -62,19 +39,9 @@ type Action =
     }
   | { type: "RESET" };
 
-const initialState: ChainDataState = {};
-for (const chainId of SUPPORTED_CHAINS) {
-  initialState[chainId] = initialChainData;
-}
-
-const ChainDataContext = createContext<{
-  state: ChainDataState;
-  dispatch: React.Dispatch<Action>;
-} | null>(null);
-
-function chainDataReducer(
+export function chainDataReducer(
   state: ChainDataState,
-  action: Action
+  action: ChainDataAction
 ): ChainDataState {
   switch (action.type) {
     case "ADD_MESSAGE":
@@ -83,9 +50,12 @@ function chainDataReducer(
         [action.chainId]: {
           ...state[action.chainId],
           outgoingMsgs: [
-            ...state[action.chainId]?.outgoingMsgs.slice(0, action.index),
+            ...(state[action.chainId]?.outgoingMsgs || []).slice(
+              0,
+              action.index
+            ),
             action.message,
-            ...state[action.chainId]?.outgoingMsgs.slice(action.index),
+            ...(state[action.chainId]?.outgoingMsgs || []).slice(action.index),
           ],
         },
       };
@@ -96,7 +66,7 @@ function chainDataReducer(
         [action.chainId]: {
           ...state[action.chainId],
           outgoingMsgs: [
-            ...state[action.chainId]?.outgoingMsgs,
+            ...(state[action.chainId]?.outgoingMsgs || []),
             action.message,
           ],
         },
@@ -153,29 +123,37 @@ function chainDataReducer(
       };
 
     case "RESET":
-      return initialState;
+      return chainDataInitialState;
 
     default:
       return state;
   }
 }
 
-export function ChainDataProvider({ children }: { children: ReactNode }) {
-  //const [state, dispatch] = useReducer(chainDataReducer, initialState);
-  // Load initial state from localStorage or use default
-  const loadedState = getData("Rock-Paper-Scissors-chainData", initialState);
-  const [state, dispatch] = useReducer(chainDataReducer, loadedState);
+interface ChainData {
+  outgoingMsgs: msgRelayer[];
+  receiptTrieRoots: [number, number, string][];
+  blockNumber: number;
+}
 
-  // Save to localStorage whenever state changes
-  useEffect(() => {
-    storeData("Rock-Paper-Scissors-chainData", state);
-  }, [state]);
+interface ChainDataState {
+  [chainId: number]: ChainData;
+}
 
-  return (
-    <ChainDataContext.Provider value={{ state, dispatch }}>
-      {children}
-    </ChainDataContext.Provider>
-  );
+export const ChainDataContext = createContext<{
+  state: ChainDataState;
+  dispatch: React.Dispatch<ChainDataAction>;
+} | null>(null);
+
+const initialChainData: ChainData = {
+  outgoingMsgs: [],
+  receiptTrieRoots: [],
+  blockNumber: 0,
+};
+
+export const chainDataInitialState: ChainDataState = {};
+for (const chainId of SUPPORTED_CHAINS) {
+  chainDataInitialState[chainId] = initialChainData;
 }
 
 export function useChainData() {

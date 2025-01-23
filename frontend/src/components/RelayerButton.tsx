@@ -1,4 +1,5 @@
 "use client";
+import { useState } from "react";
 import { useAccount, useConfig, useWriteContract } from "wagmi";
 import {
   CONTRACT_ABIS,
@@ -8,17 +9,12 @@ import {
   msgRelayer,
   msgReceipt,
 } from "../utils/ContractInfo"; //
-import React, { useState } from "react";
 import { Address, Hex } from "viem";
 import { waitForTransactionReceipt } from "wagmi/actions";
 import { useChainData } from "../contexts/ChainDataContext";
-import { useGame } from "@/contexts/GameContext";
+import { useGame } from "../contexts/GameContext";
 import { Tooltip } from "./Tooltip";
 
-const GAS_CONFIG = {
-  maxFeePerGas: 100000000000n, // 100 gwei
-  maxPriorityFeePerGas: 2000000000n, // 2 gwei
-};
 // Ammount of messages required to fill up bus in the taxi/bus logic (and relay them)
 //const BUS_CAPACITY = 10; // not implemented for web demonstration
 
@@ -67,9 +63,9 @@ export default function RelayerButton() {
       }
       const [receipts, proofs, blockNumbers] = inboundMsgs.reduce(
         (acc, msg) => {
-          acc[0].push(msg.receipt),
-            acc[1].push(msg.proof),
-            acc[2].push(msg.blockNumber);
+          acc[0].push(msg.receipt);
+          acc[1].push(msg.proof);
+          acc[2].push(msg.blockNumber);
           return acc;
         },
         [[], [], []] as [msgReceipt[], Hex[][], number[]]
@@ -90,8 +86,6 @@ export default function RelayerButton() {
             chain,
             blockNumbers,
           ],
-          //gas: 30000000n, // Explicit gas limit
-          //...GAS_CONFIG, // Add gas price configuration
         });
         const txReceipt = await waitForTransactionReceipt(config, {
           hash: txHash,
@@ -100,7 +94,7 @@ export default function RelayerButton() {
         if (txReceipt.status === "reverted") {
           throw new Error("Transaction Recepit status returned as reverted");
         }
-      } catch (error: any) {
+      } catch (error) {
         console.error("Error Inbounding messages:", error);
       }
     }
@@ -140,7 +134,11 @@ export default function RelayerButton() {
                   <div className="animate-spin rounded-full h-6 w-6 border-b-2 border-white"></div>
                 </div>
               ) : chainId != blockchains[moveNumber % 2] ? (
-                `Switch network to: ${CHAIN_NAMES[blockchains[moveNumber % 2] as keyof typeof CHAIN_NAMES]}`
+                `Switch network to: ${
+                  CHAIN_NAMES[
+                    blockchains[moveNumber % 2] as keyof typeof CHAIN_NAMES
+                  ]
+                }`
               ) : (
                 "Call Relayer"
               )}

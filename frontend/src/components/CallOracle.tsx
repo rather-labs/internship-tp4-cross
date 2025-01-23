@@ -1,7 +1,7 @@
-import { useGame } from "@/contexts/GameContext";
+import { useGame } from "../contexts/GameContext";
 import OracleButton from "./OracleButton";
 import { Tooltip } from "./Tooltip";
-import { BLOCKS_FOR_FINALITY } from "@/utils/ContractInfo";
+import { BLOCKS_FOR_FINALITY } from "../utils/ContractInfo";
 
 export function CallOracle() {
   const { finalitySpeed, moveBlockNumber } = useGame();

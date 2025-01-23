@@ -1,6 +1,6 @@
 import { Tooltip } from "./Tooltip";
 import { useGame } from "../contexts/GameContext";
-import { useChainData } from "@/contexts/ChainDataContext";
+import { useChainData } from "../contexts/ChainDataContext";
 
 export function RestartGame() {
   const { restartGame, players } = useGame();
