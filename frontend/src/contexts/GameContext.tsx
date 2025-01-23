@@ -14,6 +14,7 @@ export type GameMoveStates =
   | "WAITING_RELAYER"
   | "RELAYER_FINISHED"
   | "TRANSITION"
+  | "WAITING_REVEAL"
   | "WAITING_RESULT"
   | "FINISHED";
 
@@ -46,6 +47,10 @@ interface GameContextType {
   restartGame: () => void;
   result: GameResults;
   setResult: (result: GameResults) => void;
+  player1Move: number;
+  setPlayer1Move: (move: number) => void;
+  player1Nonce: number;
+  setPlayer1Nonce: (nonce: number) => void;
 }
 
 export const GameContext = createContext<GameContextType | undefined>(
@@ -64,6 +69,8 @@ interface StoredGameState {
   bets: number[];
   gameState: GameMoveStates;
   result: GameResults;
+  player1Move: number;
+  player1Nonce: number;
 }
 
 const initialState: StoredGameState = {
@@ -77,6 +84,8 @@ const initialState: StoredGameState = {
   bets: [-1, -1],
   gameState: "PLAYING",
   result: null,
+  player1Move: 0,
+  player1Nonce: 0,
 };
 
 export function GameProvider({ children }: { children: ReactNode }) {
@@ -105,6 +114,8 @@ export function GameProvider({ children }: { children: ReactNode }) {
     storedState.gameState
   );
   const [result, setResult] = useState<GameResults>(storedState.result);
+  const [player1Move, setPlayer1Move] = useState(storedState.player1Move);
+  const [player1Nonce, setPlayer1Nonce] = useState(storedState.player1Nonce);
 
   function restartGame() {
     setGameId(initialState.gameId);
@@ -117,6 +128,8 @@ export function GameProvider({ children }: { children: ReactNode }) {
     setBets(initialState.bets);
     setGameState(initialState.gameState);
     setResult(initialState.result);
+    setPlayer1Move(initialState.player1Move);
+    setPlayer1Nonce(initialState.player1Nonce);
   }
 
   // Save state changes to localStorage
@@ -132,6 +145,8 @@ export function GameProvider({ children }: { children: ReactNode }) {
       bets,
       gameState,
       result,
+      player1Move,
+      player1Nonce,
     });
   }, [
     gameId,
@@ -144,6 +159,8 @@ export function GameProvider({ children }: { children: ReactNode }) {
     bets,
     gameState,
     result,
+    player1Move,
+    player1Nonce,
   ]);
 
   return (
@@ -170,6 +187,10 @@ export function GameProvider({ children }: { children: ReactNode }) {
         restartGame,
         result,
         setResult,
+        player1Move,
+        setPlayer1Move,
+        player1Nonce,
+        setPlayer1Nonce,
       }}
     >
       {children}

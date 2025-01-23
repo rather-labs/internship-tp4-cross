@@ -22,7 +22,8 @@ export function ShowResult() {
           Player {currentPlayer}'s move has resolved the game.
         </p>
         <p className="text-m text-gray-600">
-          This information has to be sent to the source blockchain.
+          This information has to be sent to Player
+          {currentPlayer === 1 ? " 2" : " 1"}'s blockchain.
         </p>
       </>
       <button

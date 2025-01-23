@@ -14,6 +14,7 @@ import { SpeedSelection } from "@/components/SpeedSelection";
 import { RestartGame } from "@/components/RestartGame";
 import { ShowResult } from "@/components/ShowResult";
 import { BetSelection } from "@/components/BetSelection";
+import { RevealMove } from "@/components/RevealMove";
 
 export default function SinglePlayerGame() {
   const router = useRouter();
@@ -57,6 +58,10 @@ export default function SinglePlayerGame() {
 
     if (gameState === "WAITING_RESULT") {
       return <ShowResult />;
+    }
+
+    if (gameState === "WAITING_REVEAL") {
+      return <RevealMove />;
     }
 
     return (

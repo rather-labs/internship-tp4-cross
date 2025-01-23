@@ -9,13 +9,11 @@ export function Transition() {
     setGameState,
     currentPlayer,
     moveNumber,
-    result,
   } = useGame();
 
   const router = useRouter();
 
-  if (result !== null) {
-    setGameState("FINISHED");
+  if (moveNumber === 3) {
     return (
       <div className="flex flex-col space-y-8 items-center justify-center">
         <h2 className="text-3xl font-bold mb-8">Game Finished!</h2>
@@ -39,18 +37,18 @@ export function Transition() {
     <div className="flex flex-col space-y-8 items-center justify-center">
       <h2 className="text-3xl font-bold mb-8">Move Sent!</h2>
       <p className="text-m text-gray-600">
-        Player {currentPlayer}'s move has been sent to the game contract in the
-        destination blockchain.
+        Player {currentPlayer}'s move{moveNumber === 1 ? "'s hash" : ""} has
+        been sent to the game contract in the destination blockchain.
       </p>
       <button
         className="bg-[#F6851B] hover:bg-[#E2761B] px-8 py-4 rounded-xl text-2xl font-bold transition-all transform hover:scale-105 shadow-lg text-white"
         onClick={() => {
           setMoveNumber(moveNumber + 1);
           setCurrentPlayer(currentPlayer === 1 ? 2 : 1);
-          setGameState("PLAYING");
+          setGameState(moveNumber === 1 ? "PLAYING" : "WAITING_REVEAL");
         }}
       >
-        Start Player {currentPlayer === 1 ? 2 : 1}'s Turn
+        {moveNumber === 1 ? "Start Player 2's Turn" : "Reveal Player 1's Move"}
       </button>
     </div>
   );

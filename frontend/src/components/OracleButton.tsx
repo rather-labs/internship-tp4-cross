@@ -90,7 +90,7 @@ export default function OracleButton() {
       );
       setBlocksRemaining(remaining);
     }
-  }, [blockNumber, moveBlockNumber, finalitySpeed]);
+  }, [chainId, chainData, blockNumber, moveBlockNumber, finalitySpeed]);
 
   const handleInboundBlockNumbers = async () => {
     if (chainId === undefined) {

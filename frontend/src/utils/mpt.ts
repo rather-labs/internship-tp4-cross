@@ -1,5 +1,5 @@
 import { createMPT, verifyMerkleProof, createMerkleProof } from '@ethereumjs/mpt'
-import { bytesToHex, MapDB, hexToBytes, concatBytes, bigIntToBytes } from '@ethereumjs/util'
+import { MapDB, hexToBytes, concatBytes, bigIntToBytes } from '@ethereumjs/util'
 import { RLP } from '@ethereumjs/rlp'
 import { TransactionReceipt } from 'viem';
 

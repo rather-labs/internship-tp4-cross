@@ -20,7 +20,11 @@ import {
   txStatus,
 } from "@/utils/mpt";
 import { RLP as rlp } from "@ethereumjs/rlp";
-import { GameResultsArray, useGame } from "@/contexts/GameContext";
+import {
+  GameMoveStates,
+  GameResultsArray,
+  useGame,
+} from "@/contexts/GameContext";
 
 // Ammount of messages required to fill up bus in the taxi/bus logic (and relay them)
 //const BUS_CAPACITY = 10; // not implemented for web demonstration
@@ -158,8 +162,8 @@ export default function Relayer() {
     if (gameState === "FINISHED") {
       return;
     }
+    let newGameState = "RELAYER_FINISHED";
     // Remove delivered messages from chainData
-    setGameState("RELAYER_FINISHED");
     for (const [index, msgNumber] of log.args.inboundMessageNumbers.entries()) {
       if (
         log.args.successfullInbound[index] ||
@@ -172,9 +176,10 @@ export default function Relayer() {
           destinationBC: chainId ?? 0,
         });
       } else {
-        setGameState("WAITING_RELAYER");
+        newGameState = "WAITING_RELAYER";
       }
     }
+    setGameState(newGameState as GameMoveStates);
   };
 
   const handleMoveReceived = async (log: any) => {
