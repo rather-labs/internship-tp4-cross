@@ -23,26 +23,30 @@ export async function getCircuit() {
 }
 
 export async function generate_backend() {
-	toast.success("Generating backend	... ⏳");
+	toast.loading("Generating backend	... ⏳", {duration: 1_000_000, id: "noir-backend-generation"});
 	const { program } = await getCircuit();
 	const noir = new Noir(program);
 	const backend = new UltraHonkBackend(program.bytecode);
+	toast.remove("noir-backend-generation");
 	toast.success("Generated backend... ✅");
 	return { noir, backend };
 }
 
 export async function generateProof(move: number, nonce: number[]) {
 	try {
-		toast.success("Generating noir backend... ⏳");
+		toast.loading("Generating noir backend... ⏳", {duration: 1_000_000, id: "noir-backend-generation"});
 		const { program } = await getCircuit();
+		toast.remove("noir-backend-generation");
 		const noir = new Noir(program);
 		const backend = new UltraHonkBackend(program.bytecode);
 		const { witness, returnValue } = await noir.execute({ move, nonce });
-		toast.success("Generating noir proof... ⏳");
+		toast.loading("Generating noir proof... ⏳", {id: "noir-proof-generation", duration: 1_000_000});
 		const proof = await backend.generateProof(witness);
-		toast.success("Verifying noir proof... ⌛");
+		toast.remove("noir-proof-generation");
+		toast.loading("Verifying noir proof... ⌛", {id: "noir-proof-verification", duration: 1_000_000});
 		const isValid = await backend.verifyProof(proof);
-		toast.success(`Proof is ${isValid ? "valid" : "invalid"}... ✅`);
+		toast.remove("noir-proof-verification");
+		toast.success(`Proof is ${isValid ? "valid" : "invalid"}... ✅`, {duration: 2_500});
 		return { returnValue, proof};
 	} catch (err) {
 		toast.error(`${err}`);
@@ -52,12 +56,14 @@ export async function generateProof(move: number, nonce: number[]) {
 
 export async function verifyProof(proof: ProofData) {
 	try {
-		toast.success("Generating noir backend... ⏳");
+		toast.loading("Generating noir backend... ⏳", {duration: 1_000_000, id: "noir-backend-generation"});
 		const { program } = await getCircuit();
 		const backend = new UltraHonkBackend(program.bytecode);
-		toast.success("Verifying proof... ⌛");
+		toast.remove("noir-backend-generation");
+		toast.loading("Verifying proof... ⌛", {duration: 1_000_000, id: "noir-proof-verification"});
 		const isValid = await backend.verifyProof(proof);
-		toast.success(`Proof is ${isValid ? "valid" : "invalid"}... ✅`);
+		toast.remove("noir-proof-verification");
+		toast.success(`Proof is ${isValid ? "valid" : "invalid"}... ✅`, {duration: 2_500});
 		return isValid;
 	} catch (err) {
 		toast.error(`${err}`);
