@@ -1,5 +1,3 @@
-"use client";
-
 // Custom serializer for BigInt
 export const serialize = (obj: any): any => {
   return JSON.stringify(obj, (_, value) =>

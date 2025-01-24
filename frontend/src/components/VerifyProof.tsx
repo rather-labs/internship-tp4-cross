@@ -1,21 +1,46 @@
 import { useState } from "react";
 import { useGame } from "../contexts/GameContext";
-import { verifyProof } from "../utils/noir";
+import { noir_return_value_to_hex, verifyProof } from "../utils/noir";
 import { ProofData } from "@aztec/bb.js";
+import { InputValue } from "@noir-lang/noirc_abi";
+import toast from "react-hot-toast";
 
 export function VerifyProof() {
   const [verifying, setVerifying] = useState(false);
 
-  const { setGameState, currentPlayer, proof } = useGame();
+  const { setGameState, currentPlayer, proof, player1MoveHash, gameId } =
+    useGame();
 
   const handleVerifyProof = async () => {
     setVerifying(true);
+    const hash = noir_return_value_to_hex(proof?.publicInputs as InputValue);
+    if (hash !== player1MoveHash) {
+      setVerifying(false);
+      toast.error(
+        "Proof submitted doesn't correspond to player 1's move for game " +
+          gameId
+      );
+      return;
+    }
     const verified = await verifyProof(proof as ProofData);
     setVerifying(false);
     if (verified) {
       setGameState("PLAYING");
     }
   };
+
+  if (player1MoveHash === "") {
+    return (
+      <div className="flex flex-col space-y-8 items-center justify-center">
+        <h2 className="text-3xl font-bold mb-8">Waiting...</h2>
+
+        <p className="text-m text-gray-600">
+          Waiting for the game contract to emit the hashed value of player 1's
+          move
+        </p>
+      </div>
+    );
+  }
 
   return (
     <div className="flex flex-col space-y-8 items-center justify-center">

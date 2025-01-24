@@ -46,6 +46,8 @@ interface GameContextType {
   setPlayer1Move: (move: number) => void;
   player1Nonce: number;
   setPlayer1Nonce: (nonce: number) => void;
+  player1MoveHash: string;
+  setPlayer1MoveHash: (hash: string) => void;
   proof: ProofData | null;
   setProof: (proof: ProofData | null) => void;
 }
@@ -68,6 +70,7 @@ export interface StoredGameState {
   result: GameResults;
   player1Move: number;
   player1Nonce: number;
+  player1MoveHash: string;
   proof: ProofData | null;
 }
 

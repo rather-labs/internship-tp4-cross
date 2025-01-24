@@ -1,4 +1,3 @@
-"use client";
 import {
   useAccount,
   useBlockNumber,
@@ -13,7 +12,7 @@ import {
   SUPPORTED_CHAINS,
   BLOCKS_FOR_FINALITY,
 } from "../utils/ContractInfo"; //
-import React, { useEffect, useState } from "react";
+import { useEffect, useState } from "react";
 import { Address } from "viem";
 import { waitForTransactionReceipt } from "wagmi/actions";
 import { useChainData } from "../contexts/ChainDataContext";
@@ -22,9 +21,9 @@ import { Tooltip } from "./Tooltip";
 type ChainAddresses = (typeof CONTRACT_ADDRESSES)["outgoing"];
 
 export default function OracleButton() {
-  let config = useConfig();
+  const config = useConfig();
 
-  let { isConnected, chainId } = useAccount({ config });
+  const { isConnected, chainId } = useAccount({ config });
 
   const {
     switchChainAsync: switchChain,
@@ -90,7 +89,15 @@ export default function OracleButton() {
       );
       setBlocksRemaining(remaining);
     }
-  }, [chainId, chainData, blockNumber, moveBlockNumber, finalitySpeed]);
+  }, [
+    chainId,
+    chainData,
+    blockNumber,
+    moveBlockNumber,
+    finalitySpeed,
+    blockchains,
+    moveNumber,
+  ]);
 
   const handleInboundBlockNumbers = async () => {
     if (chainId === undefined) {
@@ -115,7 +122,7 @@ export default function OracleButton() {
             "Transaction Recepit for blocknumber status returned as reverted"
           );
         }
-      } catch (error: any) {
+      } catch (error) {
         console.error("Error setting blocknumber:", error);
       }
     }
@@ -155,7 +162,7 @@ export default function OracleButton() {
           sourceId: receipt[0],
           blockNumber: receipt[1],
         });
-      } catch (error: any) {
+      } catch (error) {
         console.error("Error setting receipt trie root:", error);
       }
     }
@@ -233,10 +240,18 @@ export default function OracleButton() {
           {switchChainIsPending
             ? "Please Wait..."
             : chainId != blockchains[moveNumber % 2]
-              ? `Switch network to: ${CHAIN_NAMES[blockchains[moveNumber % 2] as keyof typeof CHAIN_NAMES]}`
-              : blocksRemaining != 0
-                ? `Switch network to wait for finality, to: ${CHAIN_NAMES[blockchains[(moveNumber + 1) % 2] as keyof typeof CHAIN_NAMES]}`
-                : "On the right chain to call the Oracle"}
+            ? `Switch network to: ${
+                CHAIN_NAMES[
+                  blockchains[moveNumber % 2] as keyof typeof CHAIN_NAMES
+                ]
+              }`
+            : blocksRemaining != 0
+            ? `Switch network to wait for finality, to: ${
+                CHAIN_NAMES[
+                  blockchains[(moveNumber + 1) % 2] as keyof typeof CHAIN_NAMES
+                ]
+              }`
+            : "On the right chain to call the Oracle"}
         </button>
         <Tooltip content="You have to be in the message sender chain to listen current block number and in the destintation chain to transfer the validation data" />
       </div>

@@ -17,6 +17,7 @@ const initialState: StoredGameState = {
   result: null,
   player1Move: 0,
   player1Nonce: 0,
+  player1MoveHash: "",
   proof: null,
 };
 
@@ -48,6 +49,9 @@ export function GameProvider({ children }: { children: ReactNode }) {
   const [result, setResult] = useState<GameResults>(storedState.result);
   const [player1Move, setPlayer1Move] = useState(storedState.player1Move);
   const [player1Nonce, setPlayer1Nonce] = useState(storedState.player1Nonce);
+  const [player1MoveHash, setPlayer1MoveHash] = useState(
+    storedState.player1MoveHash
+  );
   const [proof, setProof] = useState<ProofData | null>(storedState.proof);
 
   function restartGame() {
@@ -63,6 +67,7 @@ export function GameProvider({ children }: { children: ReactNode }) {
     setResult(initialState.result);
     setPlayer1Move(initialState.player1Move);
     setPlayer1Nonce(initialState.player1Nonce);
+    setPlayer1MoveHash(initialState.player1MoveHash);
     setProof(initialState.proof);
   }
 
@@ -81,6 +86,7 @@ export function GameProvider({ children }: { children: ReactNode }) {
       result,
       player1Move,
       player1Nonce,
+      player1MoveHash,
       proof,
     });
   }, [
@@ -96,6 +102,7 @@ export function GameProvider({ children }: { children: ReactNode }) {
     result,
     player1Move,
     player1Nonce,
+    player1MoveHash,
     proof,
   ]);
 
@@ -127,6 +134,8 @@ export function GameProvider({ children }: { children: ReactNode }) {
         setPlayer1Move,
         player1Nonce,
         setPlayer1Nonce,
+        player1MoveHash,
+        setPlayer1MoveHash,
         proof,
         setProof,
       }}

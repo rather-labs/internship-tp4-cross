@@ -64,7 +64,7 @@ export async function verifyProof(proof: ProofData) {
 	}
 }
 
-export function noir_return_value_to_hex(returnValue: InputValue) {
+export function noir_return_value_to_hex(returnValue: InputValue | string[]) {
 	return "0x" + Array.from(returnValue as string[])
             .map((b: string) => Number(b).toString(16).padStart(2, "0"))
             .join("");

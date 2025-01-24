@@ -15,8 +15,6 @@ import { waitForTransactionReceipt } from "wagmi/actions";
 import { useChainData } from "../contexts/ChainDataContext";
 import { toBytes, parseUnits } from "viem";
 import axios from "axios";
-import { keccak256 } from "viem/utils";
-import { concatBytes } from "@ethereumjs/util";
 import { generateProof, noir_return_value_to_hex } from "../utils/noir";
 import { InputValue } from "@noir-lang/noirc_abi";
 
@@ -83,6 +81,7 @@ export function MoveSelection() {
 
   const handleFirstMove = async (choice: string) => {
     try {
+      setWaitingForTxReceipt(true);
       // Determine destination chain ID based on current chain
       const destinationChainId =
         chainId === CHAIN_IDS.localhost_1
@@ -122,7 +121,6 @@ export function MoveSelection() {
         ),
       });
 
-      setWaitingForTxReceipt(true);
       const txReceipt = await waitForTransactionReceipt(config, {
         hash: txHash,
       });

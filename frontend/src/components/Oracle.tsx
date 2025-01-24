@@ -1,4 +1,3 @@
-"use client";
 import {
   useAccount,
   useBlockNumber,
@@ -10,7 +9,7 @@ import {
   CONTRACT_ADDRESSES,
   CHAIN_NAMES,
 } from "../utils/ContractInfo"; //
-import React, { useEffect } from "react";
+import { useEffect } from "react";
 import { Address } from "viem";
 import { getBlock } from "wagmi/actions";
 import { useChainData } from "../contexts/ChainDataContext";
@@ -22,7 +21,7 @@ export default function Oracle() {
 
   const { state: chainData, dispatch } = useChainData();
 
-  let config = useConfig();
+  const config = useConfig();
 
   const { data: blockNumber } = useBlockNumber({
     watch: true,
@@ -44,9 +43,13 @@ export default function Oracle() {
       chainId: chainId,
       blockNumber: Number(blockNumber),
     });
-  }, [blockNumber]);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [blockNumber, chainId, dispatch]);
 
-  const handleEmitMsg = async (log: any) => {
+  const handleEmitMsg = async (log: {
+    blockNumber: bigint;
+    args: { destinationBC: number };
+  }) => {
     console.log("Oracle: handleEmitMsg", " | chainId ", chainId);
     // Store receipt trie root in local storage
     const Block = await getBlock(config, {

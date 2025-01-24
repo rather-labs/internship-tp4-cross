@@ -1,4 +1,3 @@
-"use client";
 import { useAccount, useConfig, useWatchContractEvent } from "wagmi";
 import {
   CONTRACT_ABIS,
@@ -33,9 +32,10 @@ export default function Relayer() {
 
   const { state: chainData, dispatch } = useChainData();
 
-  const { gameState, setGameState, setGameId, setResult } = useGame();
+  const { gameState, setGameState, setGameId, setResult, setPlayer1MoveHash } =
+    useGame();
 
-  let config = useConfig();
+  const config = useConfig();
 
   // Get the correct contract address for the current chain
   const incomingAddress = CONTRACT_ADDRESSES["incoming"][
@@ -113,11 +113,21 @@ export default function Relayer() {
         txType: txTypes[receipt.type],
         rlpEncTxIndex: toHex(rlp.encode(message.txIndex)),
       } as msgReceipt,
-      proof.map((value: any) => toHex(value)),
+      proof.map((value) => toHex(value)),
     ];
   }
 
-  const handleEmitMsg = async (log: any) => {
+  const handleEmitMsg = async (log: {
+    blockNumber: bigint;
+    args: {
+      destinationBC: number;
+      finalityNBlocks: number;
+      messageNumber: number;
+      taxi: boolean;
+      fee: number;
+    };
+    transactionIndex: number;
+  }) => {
     console.log("Relayer: handleEmitMsg", " | chainId ", chainId);
     const outMsg: msgRelayer = {
       blockNumber: Number(log.blockNumber),
@@ -136,7 +146,7 @@ export default function Relayer() {
     outMsg.proof = proof as Hex[];
 
     // Insert event ordered by finality block
-    let index = chainData[chainId ?? 0].outgoingMsgs.findIndex(
+    const index = chainData[chainId ?? 0].outgoingMsgs.findIndex(
       (msg: msgRelayer) => msg.finalityBlock >= outMsg.finalityBlock
     );
     if (index === -1) {
@@ -184,6 +194,7 @@ export default function Relayer() {
   const handleMoveReceived = async (log: any) => {
     console.log("Relayer: handleMoveReceived", " | chainId ", chainId);
     setGameId(Number(log.args.gameId));
+    setPlayer1MoveHash(log.args.player1MoveHash);
   };
 
   const handleGameResult = async (log: any) => {

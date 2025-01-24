@@ -1,5 +1,3 @@
-"use client";
-
 import { useEffect } from "react";
 import toast from "react-hot-toast";
 import {
@@ -32,7 +30,7 @@ export function WalletConnection() {
   const { data: ensAvatar } = useEnsAvatar({ name: ensName! });
 
   useEffect(() => {
-    if (chainId) {
+    if (chainId && isConnected) {
       const network = SUPPORTED_CHAINS.indexOf(chainId);
       if (network < 0) {
         const errorMsg = `Network not supported. Please switch to one of: ${SUPPORTED_CHAINS.map(
