@@ -79,9 +79,9 @@ export function MoveSelection() {
     try {
       // Determine destination chain ID based on current chain
       const destinationChainId =
-        chainId === CHAIN_IDS.localhost_1
-          ? CHAIN_IDS.localhost_2
-          : CHAIN_IDS.localhost_1;
+        chainId === CHAIN_IDS.Holesky
+          ? CHAIN_IDS.BSC_testnet
+          : CHAIN_IDS.Holesky;
       // Determine bet amount for player 2 acording to current conversion rate
       const destinationPrice = await fetchPrice(destinationChainId);
       const sourcePrice = await fetchPrice(chainId as number);
@@ -92,7 +92,7 @@ export function MoveSelection() {
             chainId as keyof typeof CHAIN_NAMES
           ] as keyof (typeof CONTRACT_ADDRESSES)["game"]
         ] as `0x${string}`,
-        abi: JSON.parse(CONTRACT_ABIS["game"]),
+        abi: CONTRACT_ABIS["game"],
         functionName: "startGame",
         args: [
           address as `0x${string}`, // player2 (in single player, same as player1)
@@ -147,7 +147,7 @@ export function MoveSelection() {
             chainId as keyof typeof CHAIN_NAMES
           ] as keyof (typeof CONTRACT_ADDRESSES)["game"]
         ] as `0x${string}`,
-        abi: JSON.parse(CONTRACT_ABIS["game"]),
+        abi: CONTRACT_ABIS["game"],
         functionName: "submitMove",
         args: [
           gameId as number,

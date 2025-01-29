@@ -191,7 +191,7 @@ export default function Relayer() {
   //TODO: check if useWatchContractEvent requires third party rpc's can't be used for tutorial implementation
   useWatchContractEvent({
     address: incomingAddress,
-    abi: JSON.parse(CONTRACT_ABIS["incoming"]),
+    abi: CONTRACT_ABIS["incoming"],
     eventName: "InboundMessagesRes",
     pollingInterval: 10_000,
     onLogs(logs: any) {
@@ -201,7 +201,7 @@ export default function Relayer() {
 
   useWatchContractEvent({
     address: outgoingAddress,
-    abi: JSON.parse(CONTRACT_ABIS["outgoing"]),
+    abi: CONTRACT_ABIS["outgoing"],
     eventName: "OutboundMessage",
     pollingInterval: 10_000,
     onLogs(logs: any) {
@@ -211,7 +211,7 @@ export default function Relayer() {
 
   useWatchContractEvent({
     address: gameAddress,
-    abi: JSON.parse(CONTRACT_ABIS["game"]),
+    abi: CONTRACT_ABIS["game"],
     eventName: "MoveReceived",
     pollingInterval: 10_000,
     onLogs(logs: any) {
@@ -221,7 +221,7 @@ export default function Relayer() {
 
   useWatchContractEvent({
     address: gameAddress,
-    abi: JSON.parse(CONTRACT_ABIS["game"]),
+    abi: CONTRACT_ABIS["game"],
     eventName: "GameResult",
     pollingInterval: 10_000,
     onLogs(logs: any) {

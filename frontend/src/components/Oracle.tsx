@@ -67,7 +67,7 @@ export default function Oracle() {
   //check if useWatchContractEvent requires third party rpc's can't be used for tutorial implementation
   useWatchContractEvent({
     address: outgoingAddress,
-    abi: JSON.parse(CONTRACT_ABIS["outgoing"]),
+    abi: CONTRACT_ABIS["outgoing"],
     eventName: "OutboundMessage",
     pollingInterval: 10_000,
     onLogs(logs: any) {

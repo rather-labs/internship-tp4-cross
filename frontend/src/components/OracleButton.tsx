@@ -103,7 +103,7 @@ export default function OracleButton() {
       try {
         const txHash = await writeContractBlock({
           address: verificationAddress,
-          abi: JSON.parse(CONTRACT_ABIS["verification"]),
+          abi: CONTRACT_ABIS["verification"],
           functionName: "setLastBlock",
           args: [chain, chainData[chain].blockNumber],
         });
@@ -134,7 +134,7 @@ export default function OracleButton() {
       try {
         const txHash = await writeContractInReceipt({
           address: verificationAddress,
-          abi: JSON.parse(CONTRACT_ABIS["verification"]),
+          abi:CONTRACT_ABIS["verification"],
           functionName: "setRecTrieRoot",
           args: receipt,
         });

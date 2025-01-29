@@ -81,7 +81,7 @@ export default function RelayerButton() {
         setInboundingMsgs(true);
         const txHash = await writeContractInReceipt({
           address: incomingAddress,
-          abi: JSON.parse(CONTRACT_ABIS["incoming"]),
+          abi: CONTRACT_ABIS["incoming"],
           functionName: "inboundMessages",
           args: [
             receipts,
