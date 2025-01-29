@@ -2,14 +2,34 @@
 
 import { useEffect } from "react";
 import toast from "react-hot-toast";
-import { useAccount, useConnect, useDisconnect, useSwitchChain } from "wagmi";
+import {
+  useAccount,
+  useConnect,
+  useDisconnect,
+  useEnsName,
+  useEnsAvatar,
+  useSwitchChain,
+} from "wagmi";
 import { CHAIN_NAMES, SUPPORTED_CHAINS } from "../utils/ContractInfo";
 
+const shortenAddress = (address: string) => {
+  return `${address.slice(0, 7)}...${address.slice(-5)}`;
+};
+
 export function WalletConnection() {
-  const { status, chainId, isConnected } = useAccount();
-  const { connectors, connect, isPending } = useConnect();
+  const { status, chainId, isConnected, address, isReconnecting } =
+    useAccount();
+  const {
+    connectors,
+    connect,
+    isPending,
+    isSuccess: isConnectSuccess,
+  } = useConnect();
   const { disconnect } = useDisconnect();
-  const { isSuccess } = useSwitchChain();
+  const { isSuccess: isSwitchChainSuccess } = useSwitchChain();
+
+  const { data: ensName } = useEnsName({ address });
+  const { data: ensAvatar } = useEnsAvatar({ name: ensName! });
 
   useEffect(() => {
     if (chainId) {
@@ -30,7 +50,14 @@ export function WalletConnection() {
         disconnect();
       }
     }
-  }, [chainId, connect, disconnect, isSuccess]);
+  }, [
+    chainId,
+    isConnected,
+    isSwitchChainSuccess,
+    isConnectSuccess,
+    isReconnecting,
+    address,
+  ]);
 
   const metamaskConnector = connectors.find(
     (connector) => connector.name === "MetaMask"
@@ -39,7 +66,7 @@ export function WalletConnection() {
   return (
     <div>
       {status === "connected" ? (
-        <div className="flex flex-col gap-2">
+        <div className="flex flex-col items-center gap-2">
           <button
             className="bg-[#D73847] hover:bg-[#C73847] px-6 py-3 rounded-xl transition-all transform hover:scale-105 shadow-lg text-white flex items-center gap-2"
             onClick={() => disconnect()}
@@ -56,6 +83,21 @@ export function WalletConnection() {
             <span>
               Network: {CHAIN_NAMES[chainId as keyof typeof CHAIN_NAMES]}
             </span>
+          </div>
+
+          {ensAvatar && (
+            <div>
+              <img alt="ENS Avatar" src={ensAvatar} />
+            </div>
+          )}
+          <div className="gap-2 text-sm font-light">
+            {address && (
+              <div className="text-sm">
+                {ensName
+                  ? `${ensName} (${shortenAddress(address)})`
+                  : shortenAddress(address)}
+              </div>
+            )}
           </div>
         </div>
       ) : (

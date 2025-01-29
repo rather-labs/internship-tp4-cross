@@ -20,6 +20,7 @@ import {
   txStatus,
 } from "@/utils/mpt";
 import { RLP as rlp } from "@ethereumjs/rlp";
+import { GameResultsArray, useGame } from "@/contexts/GameContext";
 
 // Ammount of messages required to fill up bus in the taxi/bus logic (and relay them)
 //const BUS_CAPACITY = 10; // not implemented for web demonstration
@@ -28,6 +29,8 @@ export default function Relayer() {
   const { chainId } = useAccount();
 
   const { state: chainData, dispatch } = useChainData();
+
+  const { gameState, setGameState, setGameId, setResult } = useGame();
 
   let config = useConfig();
 
@@ -43,6 +46,13 @@ export default function Relayer() {
     CHAIN_NAMES[
       chainId as keyof typeof CHAIN_NAMES
     ] as keyof (typeof CONTRACT_ADDRESSES)["outgoing"]
+  ] as Address;
+
+  // Get the correct contract address for the current chain
+  const gameAddress = CONTRACT_ADDRESSES["game"][
+    CHAIN_NAMES[
+      chainId as keyof typeof CHAIN_NAMES
+    ] as keyof (typeof CONTRACT_ADDRESSES)["game"]
   ] as Address;
 
   // Get receipts and proofs formatted for on-chain contract
@@ -144,7 +154,12 @@ export default function Relayer() {
 
   const handleMsgDelivered = async (log: any) => {
     console.log("Relayer: handleMsgDelivered", " | chainId ", chainId);
+    console.log("event", log.args);
+    if (gameState === "FINISHED") {
+      return;
+    }
     // Remove delivered messages from chainData
+    setGameState("RELAYER_FINISHED");
     for (const [index, msgNumber] of log.args.inboundMessageNumbers.entries()) {
       if (
         log.args.successfullInbound[index] ||
@@ -156,35 +171,61 @@ export default function Relayer() {
           messageNumber: Number(msgNumber),
           destinationBC: chainId ?? 0,
         });
+      } else {
+        setGameState("WAITING_RELAYER");
       }
     }
   };
 
-  //check if useWatchContractEvent requires third party rpc's can't be used for tutorial implementation
+  const handleMoveReceived = async (log: any) => {
+    console.log("Relayer: handleMoveReceived", " | chainId ", chainId);
+    setGameId(Number(log.args.gameId));
+  };
+
+  const handleGameResult = async (log: any) => {
+    console.log("Relayer: handleGameResult", " | chainId ", chainId);
+    console.log("event", log.args.finishedGame);
+    setResult(GameResultsArray[Number(log.args.finishedGame.result) - 1]);
+  };
+
+  //TODO: check if useWatchContractEvent requires third party rpc's can't be used for tutorial implementation
   useWatchContractEvent({
     address: incomingAddress,
-    abi: JSON.parse(CONTRACT_ABIS["incoming"]),
+    abi: CONTRACT_ABIS["incoming"],
     eventName: "InboundMessagesRes",
     pollingInterval: 10_000,
     onLogs(logs: any) {
-      console.log(
-        "Received InboundMessagesRes logs on chainId ",
-        chainId,
-        ":",
-        logs
-      );
       handleMsgDelivered(logs[0]);
     },
   });
 
-  //check if useWatchContractEvent requires third party rpc's can't be used for tutorial implementation
   useWatchContractEvent({
     address: outgoingAddress,
-    abi: JSON.parse(CONTRACT_ABIS["outgoing"]),
+    abi: CONTRACT_ABIS["outgoing"],
     eventName: "OutboundMessage",
     pollingInterval: 10_000,
     onLogs(logs: any) {
       handleEmitMsg(logs[0]);
+    },
+  });
+
+  useWatchContractEvent({
+    address: gameAddress,
+    abi: CONTRACT_ABIS["game"],
+    eventName: "MoveReceived",
+    pollingInterval: 10_000,
+    onLogs(logs: any) {
+      handleMoveReceived(logs[0]);
+    },
+  });
+
+  useWatchContractEvent({
+    address: gameAddress,
+    abi: CONTRACT_ABIS["game"],
+    eventName: "GameResult",
+    pollingInterval: 10_000,
+    onLogs(logs: any) {
+      handleGameResult(logs[0]);
     },
   });
 

@@ -4,7 +4,7 @@ import Oracle from "@/components/Oracle";
 import Relayer from "@/components/Relayer";
 
 const Providers = dynamic(
-  () => import("./providers").then((mod) => mod.Providers),
+  () => import("./Providers").then((mod) => mod.Providers),
   { ssr: false }
 );
 
