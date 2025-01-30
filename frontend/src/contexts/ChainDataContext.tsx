@@ -1,4 +1,9 @@
-import { msgRelayer, SUPPORTED_CHAINS } from "@/utils/ContractInfo";
+import {
+  CHAIN_NAMES,
+  CONTRACT_INITIAL_BLOCKS,
+  msgRelayer,
+  SUPPORTED_CHAINS,
+} from "@/utils/ContractInfo";
 import { getData, storeData } from "@/utils/StoreData";
 import {
   createContext,
@@ -14,11 +19,18 @@ interface ChainData {
   blockNumber: number;
 }
 
-const initialChainData: ChainData = {
-  outgoingMsgs: [],
-  receiptTrieRoots: [],
-  blockNumber: 0,
-};
+function initialChainData(chainId: number): ChainData {
+  return {
+    outgoingMsgs: [],
+    receiptTrieRoots: [],
+    blockNumber:
+      CONTRACT_INITIAL_BLOCKS[
+        CHAIN_NAMES[
+          chainId as keyof typeof CHAIN_NAMES
+        ] as keyof typeof CONTRACT_INITIAL_BLOCKS
+      ],
+  };
+}
 
 export interface ChainDataState {
   [chainId: number]: ChainData;
@@ -64,7 +76,7 @@ type Action =
 
 const initialState: ChainDataState = {};
 for (const chainId of SUPPORTED_CHAINS) {
-  initialState[chainId] = initialChainData;
+  initialState[chainId] = initialChainData(chainId);
 }
 
 const ChainDataContext = createContext<{

@@ -4,6 +4,8 @@ import { bscTestnet, holesky } from 'wagmi/chains'
 import { metaMask } from 'wagmi/connectors'
 
 
+
+
 // Define local hardhat chains
 const hardhat1 = defineChain({
   id: 31_339,
@@ -40,12 +42,12 @@ export function getConfig() {
         //},
       })
     ],
-    transports: {
-      [hardhat1.id]: http('http://127.0.0.1:8547', {timeout: 10_000, retryCount: 10}),
-      [hardhat2.id]: http('http://127.0.0.1:8546', {timeout: 10_000, retryCount: 10}),
-      [bscTestnet.id]: http('https://bsc-testnet.infura.io/v3/' + process.env.INFURA_PROJECT_ID, {timeout: 10_000, retryCount: 10}),
-      [holesky.id]: http('https://holesky.infura.io/v3/' + process.env.INFURA_PROJECT_ID, {timeout: 10_000, retryCount: 10}),
-    },
+      transports: {
+        [hardhat1.id]: http('http://127.0.0.1:8547', {timeout: 10_000, retryCount: 10}),
+        [hardhat2.id]: http('http://127.0.0.1:8546', {timeout: 10_000, retryCount: 10}),
+        [bscTestnet.id]: http('https://bsc-testnet.infura.io/v3/' + process.env.NEXT_PUBLIC_INFURA_PROJECT_ID),//, {timeout: 10_000, retryCount: 10}),
+        [holesky.id]: http('https://holesky.infura.io/v3/' + process.env.NEXT_PUBLIC_INFURA_PROJECT_ID),//, {timeout: 10_000, retryCount: 10}),
+      },
     storage: createStorage({ storage: window.localStorage }), 
     syncConnectedChain: true, 
   })

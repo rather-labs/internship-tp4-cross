@@ -15,10 +15,6 @@ import { useChainData } from "../contexts/ChainDataContext";
 import { useGame } from "@/contexts/GameContext";
 import { Tooltip } from "./Tooltip";
 
-const GAS_CONFIG = {
-  maxFeePerGas: 100000000000n, // 100 gwei
-  maxPriorityFeePerGas: 2000000000n, // 2 gwei
-};
 // Ammount of messages required to fill up bus in the taxi/bus logic (and relay them)
 //const BUS_CAPACITY = 10; // not implemented for web demonstration
 
@@ -90,8 +86,6 @@ export default function RelayerButton() {
             chain,
             blockNumbers,
           ],
-          //gas: 30000000n, // Explicit gas limit
-          //...GAS_CONFIG, // Add gas price configuration
         });
         const txReceipt = await waitForTransactionReceipt(config, {
           hash: txHash,

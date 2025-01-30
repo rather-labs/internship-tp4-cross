@@ -90,7 +90,7 @@ export default function OracleButton() {
       );
       setBlocksRemaining(remaining);
     }
-  }, [blockNumber, moveBlockNumber, finalitySpeed]);
+  }, [blockNumber, moveBlockNumber, finalitySpeed, chainData]);
 
   const handleInboundBlockNumbers = async () => {
     if (chainId === undefined) {
@@ -134,7 +134,7 @@ export default function OracleButton() {
       try {
         const txHash = await writeContractInReceipt({
           address: verificationAddress,
-          abi:CONTRACT_ABIS["verification"],
+          abi: CONTRACT_ABIS["verification"],
           functionName: "setRecTrieRoot",
           args: receipt,
         });

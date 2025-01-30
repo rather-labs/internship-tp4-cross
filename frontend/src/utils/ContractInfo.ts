@@ -49,8 +49,8 @@ export const CONTRACT_ABIS = {
     game: gameAbi.abi
 }
 
-export const SUPPORTED_CHAINS : number[] = [31_339,31_338, 17_000, 97]
-export type SUPPORTED_CHAINS_TYPE = 31_339 | 31_338 | 17_000 | 97
+export const SUPPORTED_CHAINS : number[] = [17_000, 97, 31_339,31_338]
+export type SUPPORTED_CHAINS_TYPE = 17_000 | 97 | 31_339 | 31_338 
 
 export const CHAIN_NAMES = {
     [31_339]: "localhost_1",
@@ -108,15 +108,18 @@ export const CONTRACT_ADDRESSES = {
     }
 }
 
-// External  account adresses per blockchain for external relayer only
+// Block for communication contract deployment per blockchain 
+export const CONTRACT_INITIAL_BLOCKS : Record<string, number> = {
+    localhost_1: 21322558,
+    localhost_2: 44551692,
+    Holesky: 3251241,
+    BSC_testnet: 47843414,
+}
+
+// External account adresses per blockchain for external relayer only
 export const EXTERNAL_ADDRESSES = {
     localhost_1:"0xf39Fd6e51aad88F6F4ce6aB8827279cffFb92266",
     localhost_2:"0xf39Fd6e51aad88F6F4ce6aB8827279cffFb92266",
 }
 
-// Block for communication contract deployment per blockchain (to search at relayer start for external relayer only)
-export const CONTRACT_INITIAL_BLOCKS = {
-    localhost_1: 21322558,
-    localhost_2: 44551692,
-}
 
