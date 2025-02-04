@@ -35,7 +35,15 @@ export default function OracleAndRelayer() {
 
   const { state: chainData, dispatch } = useChainData();
 
-  const { gameState, setGameState, setGameId, setResult } = useGame();
+  const {
+    gameState,
+    setGameState,
+    setGameId,
+    setResult,
+    moveBlockNumber,
+    moveNumber,
+    blockchains,
+  } = useGame();
 
   const config = useConfig();
 
@@ -177,7 +185,8 @@ export default function OracleAndRelayer() {
       if (
         blockNumber === undefined ||
         chainId === undefined ||
-        chainData[chainId] === undefined
+        chainData[chainId] === undefined ||
+        moveBlockNumber === null
       ) {
         return;
       }
@@ -210,7 +219,9 @@ export default function OracleAndRelayer() {
       const fromBlock = BigInt(
         chainData[chainId].blockNumber > 0
           ? chainData[chainId].blockNumber + 1
-          : blockNumber
+          : chainId == blockchains[(moveNumber + 1) % 2]
+            ? moveBlockNumber
+            : blockNumber
       );
 
       // Update block number in chain data regardless of events
