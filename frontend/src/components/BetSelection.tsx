@@ -50,7 +50,7 @@ export function BetSelection() {
           </div>
           <button
             onClick={handleAcceptBet}
-            className="bg-[#037DD6] hover:bg-[#0260A4] px-8 py-2 rounded-xl text-xl font-bold transition-all transform hover:scale-105 shadow-lg text-white"
+            className="bg-[#037DD6] hover:bg-[#0260A4] px-8 py-2 mr-10 rounded-xl text-xl font-bold transition-all transform hover:scale-105 shadow-lg text-white"
           >
             Accept Bet
           </button>
