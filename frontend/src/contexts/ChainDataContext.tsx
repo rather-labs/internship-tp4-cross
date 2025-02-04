@@ -1,4 +1,8 @@
-import { msgRelayer, SUPPORTED_CHAINS } from "@/utils/ContractInfo";
+import {
+  CHAIN_NAMES,
+  msgRelayer,
+  SUPPORTED_CHAINS,
+} from "@/utils/ContractInfo";
 import { getData, storeData } from "@/utils/StoreData";
 import {
   createContext,
@@ -14,11 +18,13 @@ interface ChainData {
   blockNumber: number;
 }
 
-const initialChainData: ChainData = {
-  outgoingMsgs: [],
-  receiptTrieRoots: [],
-  blockNumber: 0,
-};
+function initialChainData(chainId: number): ChainData {
+  return {
+    outgoingMsgs: [],
+    receiptTrieRoots: [],
+    blockNumber: 0,
+  };
+}
 
 export interface ChainDataState {
   [chainId: number]: ChainData;
@@ -60,12 +66,14 @@ type Action =
       sourceId: number;
       blockNumber: number;
     }
-  | { type: "RESET" };
+  | { type: "RESET" }
+  | { type: "SET_LOADED_DATA"; data: ChainDataState };
 
 const initialState: ChainDataState = {};
 for (const chainId of SUPPORTED_CHAINS) {
-  initialState[chainId] = initialChainData;
+  initialState[chainId] = initialChainData(chainId);
 }
+const undefinedState: ChainDataState = {};
 
 const ChainDataContext = createContext<{
   state: ChainDataState;
@@ -155,20 +163,29 @@ function chainDataReducer(
     case "RESET":
       return initialState;
 
+    case "SET_LOADED_DATA":
+      return action.data;
     default:
       return state;
   }
 }
 
 export function ChainDataProvider({ children }: { children: ReactNode }) {
-  //const [state, dispatch] = useReducer(chainDataReducer, initialState);
-  // Load initial state from localStorage or use default
-  const loadedState = getData("Rock-Paper-Scissors-chainData", initialState);
-  const [state, dispatch] = useReducer(chainDataReducer, loadedState);
+  const [state, dispatch] = useReducer(chainDataReducer, undefinedState);
+
+  // Load initial state from localStorage or initialize if not found
+  useEffect(() => {
+    const loadedState = getData("Rock-Paper-Scissors-chainData", initialState);
+    if (loadedState) {
+      dispatch({ type: "SET_LOADED_DATA", data: loadedState });
+    }
+  }, []);
 
   // Save to localStorage whenever state changes
   useEffect(() => {
-    storeData("Rock-Paper-Scissors-chainData", state);
+    if (state != undefinedState) {
+      storeData("Rock-Paper-Scissors-chainData", state);
+    }
   }, [state]);
 
   return (

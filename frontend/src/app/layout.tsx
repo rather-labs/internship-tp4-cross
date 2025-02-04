@@ -1,7 +1,6 @@
 import "./globals.css";
 import dynamic from "next/dynamic";
-import Oracle from "@/components/Oracle";
-import Relayer from "@/components/Relayer";
+import OracleAndRelayer from "@/components/OracleAndRelayer";
 
 const Providers = dynamic(
   () => import("./providers").then((mod) => mod.Providers),
@@ -17,8 +16,7 @@ export default function RootLayout({
     <html lang="en">
       <body>
         <Providers>
-          <Oracle />
-          <Relayer />
+          <OracleAndRelayer />
           {children}
         </Providers>
       </body>

@@ -9,13 +9,11 @@ export function Transition() {
     setGameState,
     currentPlayer,
     moveNumber,
-    result,
   } = useGame();
 
   const router = useRouter();
 
-  if (result !== null) {
-    setGameState("FINISHED");
+  if (moveNumber === 2) {
     return (
       <div className="flex flex-col space-y-8 items-center justify-center">
         <h2 className="text-3xl font-bold mb-8">Game Finished!</h2>

@@ -1,7 +1,9 @@
 import { defineChain } from 'viem'
-import { http, createConfig, createStorage } from 'wagmi'
+import { webSocket, http, createConfig, createStorage } from 'wagmi'
 import { bscTestnet, holesky } from 'wagmi/chains'
 import { metaMask } from 'wagmi/connectors'
+
+
 
 
 // Define local hardhat chains
@@ -40,12 +42,17 @@ export function getConfig() {
         //},
       })
     ],
-    transports: {
-      [hardhat1.id]: http('http://127.0.0.1:8547', {timeout: 10_000, retryCount: 10}),
-      [hardhat2.id]: http('http://127.0.0.1:8546', {timeout: 10_000, retryCount: 10}),
-      [bscTestnet.id]: http('https://bsc-testnet.infura.io/v3/' + process.env.INFURA_PROJECT_ID, {timeout: 10_000, retryCount: 10}),
-      [holesky.id]: http('https://holesky.infura.io/v3/' + process.env.INFURA_PROJECT_ID, {timeout: 10_000, retryCount: 10}),
-    },
+      transports: {
+        [hardhat1.id]: http('http://127.0.0.1:8547', {timeout: 10_000, retryCount: 10}),
+        [hardhat2.id]: http('http://127.0.0.1:8546', {timeout: 10_000, retryCount: 10}),
+        [bscTestnet.id]: http('https://bsc-testnet.infura.io/v3/' + process.env.NEXT_PUBLIC_INFURA_API_KEY),//, {timeout: 10_000, retryCount: 10}),
+        [holesky.id]: http('https://holesky.infura.io/v3/' + process.env.NEXT_PUBLIC_INFURA_API_KEY),//, {timeout: 10_000, retryCount: 10}),
+        //[bscTestnet.id]: http('https://eth-holesky.g.alchemy.com/v2/' + process.env.NEXT_PUBLIC_ALCHEMY_API_KEY),
+        //[holesky.id]: http('https://bnb-testnet.g.alchemy.com/v2/' + process.env.NEXT_PUBLIC_ALCHEMY_API_KEY),
+        //[bscTestnet.id]: webSocket('wss://eth-holesky.g.alchemy.com/v2/' + process.env.NEXT_PUBLIC_ALCHEMY_API_KEY),
+        //[holesky.id]: webSocket('wss://bnb-testnet.g.alchemy.com/v2/' + process.env.NEXT_PUBLIC_ALCHEMY_API_KEY),
+
+      },
     storage: createStorage({ storage: window.localStorage }), 
     syncConnectedChain: true, 
   })

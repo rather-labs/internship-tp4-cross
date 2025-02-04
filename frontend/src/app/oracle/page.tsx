@@ -1,5 +1,5 @@
 "use client";
-import Oracle from "@/components/Oracle";
+import Oracle from "@/components/OracleAndRelayer";
 function OraclePage() {
   return (
     <div className="flex flex-col items-center justify-center h-screen">

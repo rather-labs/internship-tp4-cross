@@ -40,7 +40,11 @@ export default function SinglePlayerGame() {
     if (gameState === "WAITING_ORACLE" || gameState === "ORACLE_FINISHED") {
       return <CallOracle />;
     }
-    if (gameState === "WAITING_RELAYER" || gameState === "RELAYER_FINISHED") {
+    if (
+      gameState === "TO_CALL_RELAYER" ||
+      gameState === "WAITING_RELAYER" ||
+      gameState === "RELAYER_FINISHED"
+    ) {
       return <CallRelayer />;
     }
     if (gameState === "TRANSITION" || gameState === "FINISHED") {
