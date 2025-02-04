@@ -58,6 +58,8 @@ export default function OracleButton() {
 
   const [blocksRemaining, setBlocksRemaining] = useState<number>(-1);
 
+  const [loadingTimeout, setLoadingTimeout] = useState(false);
+
   // Get the correct contract address for the current chain
   const verificationAddress = CONTRACT_ADDRESSES["verification"][
     CHAIN_NAMES[chainId as keyof typeof CHAIN_NAMES] as keyof ChainAddresses
@@ -91,6 +93,18 @@ export default function OracleButton() {
       setBlocksRemaining(remaining);
     }
   }, [, chainId, chainData, moveBlockNumber, finalitySpeed]);
+
+  useEffect(() => {
+    let timeoutId: NodeJS.Timeout;
+    if (blocksRemaining === -1) {
+      timeoutId = setTimeout(() => {
+        setLoadingTimeout(true);
+      }, 1000);
+    } else {
+      setLoadingTimeout(false);
+    }
+    return () => clearTimeout(timeoutId);
+  }, [blocksRemaining]);
 
   const handleInboundBlockNumbers = async () => {
     console.log("handleInboundBlockNumbers");
@@ -150,10 +164,13 @@ export default function OracleButton() {
     try {
       setIsPendingOracle(true);
       const txReceiptHashes = await handleInboundReceiptTrie();
+      //wait 1 second
+      await new Promise((resolve) => setTimeout(resolve, 1500));
       const txBlockHash = await handleInboundBlockNumbers();
       if (txBlockHash === undefined) {
         throw new Error("Transaction for block number failed");
       }
+
       const [txBlock, ...txReceipts] = await Promise.all([
         waitForTransactionReceipt(config, { hash: txBlockHash }),
         ...txReceiptHashes.map((hash) =>
@@ -200,10 +217,11 @@ export default function OracleButton() {
             </p>
             <p className="text-sm text-gray-500">
               {finalitySpeed === "FAST"
-                ? `Fast mode requires ${BLOCKS_FOR_FINALITY["FAST"]} block${
+                ? `Current Block: ${chainData[chainId].blockNumber}. Fast mode requires ${BLOCKS_FOR_FINALITY["FAST"]} block${
                     BLOCKS_FOR_FINALITY["FAST"] > 1 ? "s" : ""
                   } confirmations, please wait...`
-                : `Slow mode requires ${BLOCKS_FOR_FINALITY["SLOW"]} block${
+                : `Current Block: ${chainData[chainId].blockNumber}. Slow mode requires ${BLOCKS_FOR_FINALITY["SLOW"]} block${
+
                     BLOCKS_FOR_FINALITY["SLOW"] > 1 ? "s" : ""
                   } confirmations, please wait...`}
             </p>
@@ -211,9 +229,30 @@ export default function OracleButton() {
         )}
         {blocksRemaining == 0 && (
           <p className="text-lg font-semibold text-green-600">
-            Countdown finished, you can now Switch Network and Call the Oracle
-            to submit the information.
+            The countdown has finished. Current Block: {chainData[chainId].blockNumber}<br/> You can now Switch Network and Call the Oracle
+            to submit this information.
           </p>
+        )}
+        {blocksRemaining === -1 && (
+          <div className="text-center">
+            {!loadingTimeout ? (
+              <p className="text-xl mr-8 font-semibold text-gray-700">
+                <span className="animate-pulse">...</span>
+              </p>
+            ) : (
+              <div className="flex flex-col items-center gap-2">
+                <p className="text-xl font-semibold text-gray-700">
+                  Block number reception is taking longer than expected...
+                </p>
+                <button
+                  onClick={() => window.location.reload()}
+                  className="bg-[#F6851B] hover:bg-[#E2761B] px-4 py-2 rounded-lg text-white font-semibold"
+                >
+                  Force Update Now
+                </button>
+              </div>
+            )}
+          </div>
         )}
       </div>
 
