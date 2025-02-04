@@ -99,7 +99,7 @@ export default function OracleButton() {
     if (blocksRemaining === -1) {
       timeoutId = setTimeout(() => {
         setLoadingTimeout(true);
-      }, 1000);
+      }, 10000);
     } else {
       setLoadingTimeout(false);
     }
@@ -242,7 +242,7 @@ export default function OracleButton() {
             ) : (
               <div className="flex flex-col items-center gap-2">
                 <p className="text-xl font-semibold text-gray-700">
-                  Block number reception is taking longer than expected...
+                  Block number reception is taking longer than expected, keep waiting or...
                 </p>
                 <button
                   onClick={() => window.location.reload()}
