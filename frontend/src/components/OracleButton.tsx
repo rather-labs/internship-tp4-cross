@@ -60,6 +60,18 @@ export default function OracleButton() {
 
   const [loadingTimeout, setLoadingTimeout] = useState(false);
 
+  useEffect(() => {
+    let timeoutId: NodeJS.Timeout;
+    if (blocksRemaining === -1) {
+      timeoutId = setTimeout(() => {
+        setLoadingTimeout(true);
+      }, 10000);
+    } else {
+      setLoadingTimeout(false);
+    }
+    return () => clearTimeout(timeoutId);
+  }, [blocksRemaining]);
+
   // Get the correct contract address for the current chain
   const verificationAddress = CONTRACT_ADDRESSES["verification"][
     CHAIN_NAMES[chainId as keyof typeof CHAIN_NAMES] as keyof ChainAddresses
@@ -93,18 +105,6 @@ export default function OracleButton() {
       setBlocksRemaining(remaining);
     }
   }, [, chainId, chainData, moveBlockNumber, finalitySpeed]);
-
-  useEffect(() => {
-    let timeoutId: NodeJS.Timeout;
-    if (blocksRemaining === -1) {
-      timeoutId = setTimeout(() => {
-        setLoadingTimeout(true);
-      }, 10000);
-    } else {
-      setLoadingTimeout(false);
-    }
-    return () => clearTimeout(timeoutId);
-  }, [blocksRemaining]);
 
   const handleInboundBlockNumbers = async () => {
     console.log("handleInboundBlockNumbers");
@@ -217,23 +217,38 @@ export default function OracleButton() {
             </p>
             <p className="text-sm text-gray-500">
               {finalitySpeed === "FAST"
-                ? `Current Block: ${chainData[chainId].blockNumber}. Fast mode requires ${BLOCKS_FOR_FINALITY["FAST"]} block${
+                ? `Fast mode requires ${BLOCKS_FOR_FINALITY["FAST"]} block${
                     BLOCKS_FOR_FINALITY["FAST"] > 1 ? "s" : ""
-                  } confirmations, please wait...`
-                : `Current Block: ${chainData[chainId].blockNumber}. Slow mode requires ${BLOCKS_FOR_FINALITY["SLOW"]} block${
-
+                  } confirmation${
+                    BLOCKS_FOR_FINALITY["FAST"] > 1 ? "s" : ""
+                  }, please wait...`
+                : `Slow mode requires ${BLOCKS_FOR_FINALITY["SLOW"]} block${
                     BLOCKS_FOR_FINALITY["SLOW"] > 1 ? "s" : ""
-                  } confirmations, please wait...`}
+                  } confirmation${
+                    BLOCKS_FOR_FINALITY["SLOW"] > 1 ? "s" : ""
+                  }, please wait...`}
             </p>
           </>
         )}
         {blocksRemaining == 0 && (
           <p className="text-lg font-semibold text-green-600">
-            The countdown has finished. Current Block: {chainData[chainId].blockNumber}<br/> You can now Switch Network and Call the Oracle
-            to submit this information.
+            The countdown has finished.
+            <br />
+            {chainData[
+              blockchains[(moveNumber + 1) % 2] as keyof typeof chainData
+            ]?.blockNumber > 0
+              ? `Current Block: ${
+                  chainData[
+                    blockchains[(moveNumber + 1) % 2] as keyof typeof chainData
+                  ]?.blockNumber
+                }`
+              : ""}
+            <br />
+            You can now Switch Network and Call the Oracle to submit this
+            information.
           </p>
         )}
-        {blocksRemaining === -1 && (
+        {blocksRemaining == -1 && (
           <div className="text-center">
             {!loadingTimeout ? (
               <p className="text-xl mr-8 font-semibold text-gray-700">
@@ -241,14 +256,15 @@ export default function OracleButton() {
               </p>
             ) : (
               <div className="flex flex-col items-center gap-2">
-                <p className="text-xl font-semibold text-gray-700">
-                  Block number reception is taking longer than expected, keep waiting or...
+                <p className="text-lg  text-gray-700">
+                  Block number reception is taking longer than expected <br />
+                  Keep waiting or...
                 </p>
                 <button
                   onClick={() => window.location.reload()}
-                  className="bg-[#F6851B] hover:bg-[#E2761B] px-4 py-2 rounded-lg text-white font-semibold"
+                  className="bg-[#F6851B] hover:bg-[#E2761B] px-4 py-2 rounded-lg text-white font-bold"
                 >
-                  Force Update Now
+                  Force Update
                 </button>
               </div>
             )}
