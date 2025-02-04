@@ -6,12 +6,10 @@ import {
   CHAIN_NAMES,
   msgReceipt,
   msgRelayer,
-  CONTRACT_INITIAL_BLOCKS,
 } from "../utils/ContractInfo"; //
 import React, { useEffect } from "react";
 import {
   getBlock,
-  getClient,
   getPublicClient,
   getTransactionReceipt,
 } from "wagmi/actions";
@@ -142,6 +140,7 @@ export default function OracleAndRelayer() {
   };
 
   const handleMsgDelivered = async (log: any) => {
+    console.log("log", log);
     if (gameState === "FINISHED") {
       return;
     }
@@ -159,7 +158,7 @@ export default function OracleAndRelayer() {
           destinationBC: chainId ?? 0,
         });
       } else {
-        newGameState = "WAITING_RELAYER";
+        newGameState = "TO_CALL_RELAYER";
       }
     }
     setGameState(newGameState as GameMoveStates);
@@ -175,7 +174,11 @@ export default function OracleAndRelayer() {
 
   useEffect(() => {
     const checkBlockForEvents = async () => {
-      if (blockNumber === undefined || chainId === undefined) {
+      if (
+        blockNumber === undefined ||
+        chainId === undefined ||
+        chainData[chainId] === undefined
+      ) {
         return;
       }
 
@@ -205,10 +208,7 @@ export default function OracleAndRelayer() {
       ] as Address;
 
       const fromBlock = BigInt(
-        chainData[chainId].blockNumber >
-          CONTRACT_INITIAL_BLOCKS[
-            CHAIN_NAMES[chainId as keyof typeof CHAIN_NAMES]
-          ]
+        chainData[chainId].blockNumber > 0
           ? chainData[chainId].blockNumber + 1
           : blockNumber
       );
@@ -299,16 +299,20 @@ export default function OracleAndRelayer() {
               root: Blocks[Number(log.blockNumber)].receiptsRoot,
             });
             handleEmitMsg(log);
+            console.log(log.eventName, "FINISHED");
           }
           if (log.eventName == "InboundMessagesRes") {
             console.log(log.eventName);
             handleMsgDelivered(log);
+            console.log(log.eventName, "FINISHED");
           } else if (log.eventName == "GameResult") {
             console.log(log.eventName);
             handleGameResult(log);
+            console.log(log.eventName, "FINISHED");
           } else if (log.eventName == "MoveReceived") {
             console.log(log.eventName);
             handleMoveReceived(log);
+            console.log(log.eventName, "FINISHED");
           }
         }
       } catch (error) {

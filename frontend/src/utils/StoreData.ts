@@ -18,7 +18,6 @@ export const deserialize = (str: string): any => {
 };
 
 export function storeData(name: string, data: any) {
-  if (typeof window === 'undefined') return; // Skip on server-side
   try {
     window.localStorage.setItem(name, serialize(data));
   } catch (error) {
@@ -27,7 +26,6 @@ export function storeData(name: string, data: any) {
 }
 
 export function getData(name: string, defaultData: any) {
-  if (typeof window === 'undefined') return defaultData; // Return default on server-side
   try {
     return deserialize(window.localStorage.getItem(name) || serialize(defaultData));
   } catch (error) {
