@@ -3,7 +3,7 @@ import { Hex } from "viem"
 // Define number of blocks for finality
 export const BLOCKS_FOR_FINALITY = {
     FAST: 1,
-    SLOW: 2,
+    SLOW: 10,
 }
 
 // Message information required by relayer per message emmited
