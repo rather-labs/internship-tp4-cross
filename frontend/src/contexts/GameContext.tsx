@@ -5,6 +5,7 @@ export type GameMoveStates =
   | "PLAYING"
   | "WAITING_ORACLE"
   | "ORACLE_FINISHED"
+  | "TO_CALL_RELAYER"
   | "WAITING_RELAYER"
   | "RELAYER_FINISHED"
   | "TRANSITION"

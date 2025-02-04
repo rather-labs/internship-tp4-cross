@@ -37,7 +37,8 @@ type ChainDataAction =
       sourceId: number;
       blockNumber: number;
     }
-  | { type: "RESET" };
+  | { type: "RESET" }
+  | { type: "SET_LOADED_DATA"; data: ChainDataState };
 
 export function chainDataReducer(
   state: ChainDataState,
@@ -125,6 +126,9 @@ export function chainDataReducer(
     case "RESET":
       return chainDataInitialState;
 
+    case "SET_LOADED_DATA":
+      return action.data;
+
     default:
       return state;
   }
@@ -155,6 +159,7 @@ export const chainDataInitialState: ChainDataState = {};
 for (const chainId of SUPPORTED_CHAINS) {
   chainDataInitialState[chainId] = initialChainData;
 }
+export const chainUndefinedState: ChainDataState = {};
 
 export function useChainData() {
   const context = useContext(ChainDataContext);

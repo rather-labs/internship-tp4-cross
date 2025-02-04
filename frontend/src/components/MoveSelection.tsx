@@ -6,8 +6,9 @@ import {
   CONTRACT_ABIS,
   CHAIN_COINGECKO_IDS,
   CHAIN_DECIMALS,
+  SUPPORTED_CHAINS,
 } from "../utils/ContractInfo";
-import { CHAIN_NAMES, CHAIN_IDS, moveToNumber } from "../utils/ContractInfo";
+import { CHAIN_NAMES, moveToNumber } from "../utils/ContractInfo";
 import toast from "react-hot-toast";
 import { useState } from "react";
 import { CONTRACT_ADDRESSES } from "../utils/ContractInfo";
@@ -54,6 +55,10 @@ export function MoveSelection() {
     setProof,
   } = useGame();
 
+  const [selectedChain, setSelectedChain] = useState<number>(
+    chainId == SUPPORTED_CHAINS[0] ? SUPPORTED_CHAINS[1] : SUPPORTED_CHAINS[0]
+  );
+
   async function fetchPrice(tokenChainId: number) {
     try {
       const response = await axios.get(
@@ -82,13 +87,8 @@ export function MoveSelection() {
   const handleFirstMove = async (choice: string) => {
     try {
       setWaitingForTxReceipt(true);
-      // Determine destination chain ID based on current chain
-      const destinationChainId =
-        chainId === CHAIN_IDS.localhost_1
-          ? CHAIN_IDS.localhost_2
-          : CHAIN_IDS.localhost_1;
       // Determine bet amount for player 2 acording to current conversion rate
-      const destinationPrice = await fetchPrice(destinationChainId);
+      const destinationPrice = await fetchPrice(selectedChain);
       const sourcePrice = await fetchPrice(chainId as number);
       setBets([bets[0], (bets[0] * sourcePrice) / destinationPrice]);
 
@@ -103,11 +103,11 @@ export function MoveSelection() {
             chainId as keyof typeof CHAIN_NAMES
           ] as keyof (typeof CONTRACT_ADDRESSES)["game"]
         ] as `0x${string}`,
-        abi: JSON.parse(CONTRACT_ABIS["game"]),
+        abi: CONTRACT_ABIS["game"],
         functionName: "startGame",
         args: [
           address as `0x${string}`, // player2 (in single player, same as player1)
-          destinationChainId,
+          selectedChain,
           noir_return_value_to_hex(returnValue as InputValue),
           finalitySpeed ? BLOCKS_FOR_FINALITY[finalitySpeed] : 1,
           parseUnits(
@@ -128,7 +128,7 @@ export function MoveSelection() {
         throw new Error("Transaction Recepit status returned as reverted");
       }
       dispatch({ type: "RESET" }); // clears chain data
-      setBlockChains([chainId, destinationChainId]);
+      setBlockChains([chainId, selectedChain]);
       setPlayers([address, address]);
       setMoveNumber(1);
       setCurrentPlayer(1);
@@ -160,7 +160,7 @@ export function MoveSelection() {
             chainId as keyof typeof CHAIN_NAMES
           ] as keyof (typeof CONTRACT_ADDRESSES)["game"]
         ] as `0x${string}`,
-        abi: JSON.parse(CONTRACT_ABIS["game"]),
+        abi: CONTRACT_ABIS["game"],
         functionName: "submitMove",
         args: [
           gameId as number,
@@ -220,6 +220,27 @@ export function MoveSelection() {
                 }}
               />
             </div>
+
+            {moveNumber == 0 && (
+              <div className="w-full">
+                <p className="mb-2 text-gray-600">
+                  Select Chain to use as player 2
+                </p>
+                <select
+                  className="w-full p-4 rounded-xl border border-gray-300 focus:outline-none focus:ring-2 focus:ring-[#F6851B] focus:border-transparent"
+                  onChange={(e) => setSelectedChain(Number(e.target.value))}
+                  disabled={isPendingGameMove || waitingForTxReceipt}
+                >
+                  {SUPPORTED_CHAINS.filter(
+                    (destChainId) => destChainId !== chainId
+                  ).map((destChainId) => (
+                    <option key={destChainId} value={destChainId}>
+                      {CHAIN_NAMES[destChainId as keyof typeof CHAIN_NAMES]}
+                    </option>
+                  ))}
+                </select>
+              </div>
+            )}
 
             <div className="flex items-center gap-2 justify-center">
               <div className="flex items-center gap-2 justify-center">

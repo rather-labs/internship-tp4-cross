@@ -29,7 +29,7 @@ export function serializeReceipt(receipt: TransactionReceipt) {
             hexToBytes(log.data),
         ]),
     ]
-    if (txTypes[receipt.type] !== '0x0'){
+    if (txTypes[receipt.type] !== '0x00'){
         return concatBytes(hexToBytes(txTypes[receipt.type]), RLP.encode(Data))
     }
     return RLP.encode(Data)

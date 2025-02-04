@@ -41,7 +41,7 @@ export function RevealMove() {
             chainId as keyof typeof CHAIN_NAMES
           ] as keyof (typeof CONTRACT_ADDRESSES)["game"]
         ] as `0x${string}`,
-        abi: JSON.parse(CONTRACT_ABIS["game"]),
+        abi: CONTRACT_ABIS["game"],
         functionName: "submitMove",
         args: [
           gameId as number,

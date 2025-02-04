@@ -1,15 +1,8 @@
-import {
-  useAccount,
-  useBlockNumber,
-  useConfig,
-  useSwitchChain,
-  useWriteContract,
-} from "wagmi";
+import { useAccount, useConfig, useSwitchChain, useWriteContract } from "wagmi";
 import {
   CONTRACT_ABIS,
   CONTRACT_ADDRESSES,
   CHAIN_NAMES,
-  SUPPORTED_CHAINS,
   BLOCKS_FOR_FINALITY,
 } from "../utils/ContractInfo"; //
 import { useEffect, useState } from "react";
@@ -45,10 +38,6 @@ export default function OracleButton() {
 
   const [isPendingOracle, setIsPendingOracle] = useState(false);
 
-  const { data: blockNumber } = useBlockNumber({
-    watch: true,
-  });
-
   const { state: chainData, dispatch } = useChainData();
 
   const {
@@ -59,14 +48,32 @@ export default function OracleButton() {
     moveNumber,
   } = useGame();
 
-  const [blocksRemaining, setBlocksRemaining] = useState<number>(1e10);
+  const [blocksRemaining, setBlocksRemaining] = useState<number>(-1);
+
+  const [loadingTimeout, setLoadingTimeout] = useState(false);
+
+  useEffect(() => {
+    let timeoutId: NodeJS.Timeout;
+    if (blocksRemaining === -1) {
+      timeoutId = setTimeout(() => {
+        setLoadingTimeout(true);
+      }, 10000);
+    } else {
+      setLoadingTimeout(false);
+    }
+    return () => clearTimeout(timeoutId);
+  }, [blocksRemaining]);
 
   // Get the correct contract address for the current chain
   const verificationAddress = CONTRACT_ADDRESSES["verification"][
     CHAIN_NAMES[chainId as keyof typeof CHAIN_NAMES] as keyof ChainAddresses
   ] as Address;
   useEffect(() => {
-    if (blockNumber === undefined || chainId === undefined) {
+    if (
+      chainId === undefined ||
+      chainData[chainId] === undefined ||
+      chainData[chainId].blockNumber === 0
+    ) {
       return;
     }
     if (chainId == blockchains[moveNumber % 2]) {
@@ -85,14 +92,13 @@ export default function OracleButton() {
         0,
         (finalitySpeed ? BLOCKS_FOR_FINALITY[finalitySpeed] : 0) +
           Number(moveBlockNumber) -
-          Number(blockNumber)
+          Number(chainData[chainId].blockNumber)
       );
       setBlocksRemaining(remaining);
     }
   }, [
     chainId,
     chainData,
-    blockNumber,
     moveBlockNumber,
     finalitySpeed,
     blockchains,
@@ -103,28 +109,20 @@ export default function OracleButton() {
     if (chainId === undefined) {
       return;
     }
-    for (const chain of SUPPORTED_CHAINS) {
-      if (chain === chainId || chainData[chain] === undefined) {
-        continue;
-      }
-      try {
-        const txHash = await writeContractBlock({
-          address: verificationAddress,
-          abi: JSON.parse(CONTRACT_ABIS["verification"]),
-          functionName: "setLastBlock",
-          args: [chain, chainData[chain].blockNumber],
-        });
-        const txReceipt = await waitForTransactionReceipt(config, {
-          hash: txHash,
-        });
-        if (txReceipt.status === "reverted") {
-          throw new Error(
-            "Transaction Recepit for blocknumber status returned as reverted"
-          );
-        }
-      } catch (error) {
-        console.error("Error setting blocknumber:", error);
-      }
+    const chain = blockchains[(moveNumber + 1) % 2];
+    if (chain === undefined || chainData[chain].blockNumber === undefined) {
+      console.log("Blocknumber not present in chainData for chain", chain);
+      return;
+    }
+    try {
+      return await writeContractBlock({
+        address: verificationAddress,
+        abi: CONTRACT_ABIS["verification"],
+        functionName: "setLastBlock",
+        args: [chain, chainData[chain].blockNumber],
+      });
+    } catch (error) {
+      console.error("Error setting blocknumber:", error);
     }
   };
 
@@ -137,35 +135,21 @@ export default function OracleButton() {
       throw new Error("Undefined Chain Id");
     }
 
+    const txHashes = [];
     for (const receipt of chainData[chainId].receiptTrieRoots) {
       try {
         const txHash = await writeContractInReceipt({
           address: verificationAddress,
-          abi: JSON.parse(CONTRACT_ABIS["verification"]),
+          abi: CONTRACT_ABIS["verification"],
           functionName: "setRecTrieRoot",
           args: receipt,
         });
-
-        const txReceipt = await waitForTransactionReceipt(config, {
-          hash: txHash,
-        });
-        if (txReceipt.status === "reverted") {
-          throw new Error(
-            "Transaction Recepit for receipt trie root status returned as reverted"
-          );
-        }
-
-        // Remove the sent root
-        dispatch({
-          type: "REMOVE_RECEIPT_TRIE_ROOT",
-          chainId,
-          sourceId: receipt[0],
-          blockNumber: receipt[1],
-        });
+        txHashes.push(txHash);
       } catch (error) {
         console.error("Error setting receipt trie root:", error);
       }
     }
+    return txHashes;
   };
 
   // Only watch for events if we have a valid chainId
@@ -176,10 +160,39 @@ export default function OracleButton() {
   const handleOracleCall = async () => {
     try {
       setIsPendingOracle(true);
-      await Promise.all([
-        handleInboundReceiptTrie(),
-        handleInboundBlockNumbers(),
+      const txBlockHash = await handleInboundBlockNumbers();
+      if (txBlockHash === undefined) {
+        throw new Error("Transaction for block number failed");
+      }
+      await new Promise((resolve) => setTimeout(resolve, 1500));
+
+      const txReceiptHashes = await handleInboundReceiptTrie();
+      const [txBlock, ...txReceipts] = await Promise.all([
+        waitForTransactionReceipt(config, { hash: txBlockHash }),
+        ...txReceiptHashes.map((hash) =>
+          waitForTransactionReceipt(config, { hash: hash as `0x${string}` })
+        ),
       ]);
+
+      if (txBlock.status === "reverted") {
+        throw new Error(
+          "Transaction Recepit for block number status returned as reverted"
+        );
+      }
+      for (const [index, txReceipt] of txReceipts.entries()) {
+        if (txReceipt.status === "reverted") {
+          throw new Error(
+            "Transaction Recepit for receipt trie root status returned as reverted"
+          );
+        }
+        // Remove the sent root
+        dispatch({
+          type: "REMOVE_RECEIPT_TRIE_ROOT",
+          chainId,
+          sourceId: chainData[chainId].receiptTrieRoots[index][0],
+          blockNumber: chainData[chainId].receiptTrieRoots[index][1],
+        });
+      }
       setIsPendingOracle(false);
     } catch (error) {
       console.error("Error calling oracle:", error);
@@ -190,7 +203,7 @@ export default function OracleButton() {
     <div className="flex flex-col space-y-4">
       {/* Block countdown TODO: handle block revert */}
       <div className="text-center">
-        {blocksRemaining > 0 ? (
+        {blocksRemaining > 0 && (
           <>
             <p className="text-lg font-semibold text-gray-700">
               Waiting for {blocksRemaining} more block
@@ -201,17 +214,56 @@ export default function OracleButton() {
               {finalitySpeed === "FAST"
                 ? `Fast mode requires ${BLOCKS_FOR_FINALITY["FAST"]} block${
                     BLOCKS_FOR_FINALITY["FAST"] > 1 ? "s" : ""
-                  } confirmations, please wait...`
+                  } confirmation${
+                    BLOCKS_FOR_FINALITY["FAST"] > 1 ? "s" : ""
+                  }, please wait...`
                 : `Slow mode requires ${BLOCKS_FOR_FINALITY["SLOW"]} block${
                     BLOCKS_FOR_FINALITY["SLOW"] > 1 ? "s" : ""
-                  } confirmations, please wait...`}
+                  } confirmation${
+                    BLOCKS_FOR_FINALITY["SLOW"] > 1 ? "s" : ""
+                  }, please wait...`}
             </p>
           </>
-        ) : (
+        )}
+        {blocksRemaining == 0 && (
           <p className="text-lg font-semibold text-green-600">
-            Countdown finished, you can now Switch Network and Call the Oracle
-            to submit the information.
+            The countdown has finished.
+            <br />
+            {chainData[
+              blockchains[(moveNumber + 1) % 2] as keyof typeof chainData
+            ]?.blockNumber > 0
+              ? `Current Block: ${
+                  chainData[
+                    blockchains[(moveNumber + 1) % 2] as keyof typeof chainData
+                  ]?.blockNumber
+                }`
+              : ""}
+            <br />
+            You can now Switch Network and Call the Oracle to submit this
+            information.
           </p>
+        )}
+        {blocksRemaining == -1 && (
+          <div className="text-center">
+            {!loadingTimeout ? (
+              <p className="text-xl mr-8 font-semibold text-gray-700">
+                <span className="animate-pulse">...</span>
+              </p>
+            ) : (
+              <div className="flex flex-col items-center gap-2">
+                <p className="text-lg  text-gray-700">
+                  Block number reception is taking longer than expected <br />
+                  Keep waiting or...
+                </p>
+                <button
+                  onClick={() => window.location.reload()}
+                  className="bg-[#F6851B] hover:bg-[#E2761B] px-4 py-2 rounded-lg text-white font-bold"
+                >
+                  Force Update
+                </button>
+              </div>
+            )}
+          </div>
         )}
       </div>
 
@@ -262,7 +314,12 @@ export default function OracleButton() {
         <div className="flex items-center justify-center gap-4">
           <button
             className={`px-8 py-4 rounded-xl text-xl font-bold transition-all transform hover:scale-105 shadow-lg text-white ${
-              blocksRemaining != 0 && chainId != blockchains[moveNumber % 2]
+              blocksRemaining != 0 ||
+              chainId != blockchains[moveNumber % 2] ||
+              isPendingOracle ||
+              isSuccessWriteBlock ||
+              isSuccessWriteInReceipt ||
+              switchChainIsPending
                 ? "bg-gray-400 cursor-not-allowed"
                 : "bg-[#F6851B] hover:bg-[#E2761B]"
             }`}
@@ -301,15 +358,22 @@ export default function OracleButton() {
         </div>
       )}
 
-      {isSuccessWriteBlock && isSuccessWriteInReceipt && !isPendingOracle && (
-        <div className="flex flex-col space-y-4">
+      <div className="flex flex-col space-y-4">
+        {isSuccessWriteBlock && (
           <div className="p-4 bg-green-100 border border-green-400 text-green-700 rounded font-bold text-center">
-            Transaction successful!
+            Block number transfer successful!
           </div>
+        )}
+        {isSuccessWriteInReceipt && (
+          <div className="p-4 bg-green-100 border border-green-400 text-green-700 rounded font-bold text-center">
+            Receipt trie root transfer successful!
+          </div>
+        )}
+        {isSuccessWriteBlock && isSuccessWriteInReceipt && !isPendingOracle && (
           <div className="flex items-center justify-center gap-4">
             <button
               className="bg-[#F6851B] hover:bg-[#E2761B] px-8 py-4 rounded-xl text-xl font-bold transition-all transform hover:scale-105 shadow-lg text-white"
-              onClick={() => setGameState("WAITING_RELAYER")}
+              onClick={() => setGameState("TO_CALL_RELAYER")}
             >
               Continue
             </button>
@@ -321,8 +385,8 @@ export default function OracleButton() {
               }}
             />
           </div>
-        </div>
-      )}
+        )}
+      </div>
     </div>
   );
 }

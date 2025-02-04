@@ -1,4 +1,3 @@
-import { useState } from "react";
 import { useAccount, useConfig, useWriteContract } from "wagmi";
 import {
   CONTRACT_ABIS,
@@ -32,8 +31,6 @@ export default function RelayerButton() {
   } = useWriteContract();
 
   const config = useConfig();
-
-  const [inboundingMsgs, setInboundingMsgs] = useState(false);
 
   // Get the correct contract address for the current chain
   const incomingAddress = CONTRACT_ADDRESSES["incoming"][
@@ -73,10 +70,10 @@ export default function RelayerButton() {
         continue;
       }
       try {
-        setInboundingMsgs(true);
+        setGameState("WAITING_RELAYER");
         const txHash = await writeContractInReceipt({
           address: incomingAddress,
-          abi: JSON.parse(CONTRACT_ABIS["incoming"]),
+          abi: CONTRACT_ABIS["incoming"],
           functionName: "inboundMessages",
           args: [
             receipts,
@@ -89,11 +86,11 @@ export default function RelayerButton() {
         const txReceipt = await waitForTransactionReceipt(config, {
           hash: txHash,
         });
-        setInboundingMsgs(false);
         if (txReceipt.status === "reverted") {
           throw new Error("Transaction Recepit status returned as reverted");
         }
       } catch (error) {
+        setGameState("TO_CALL_RELAYER");
         console.error("Error Inbounding messages:", error);
       }
     }
@@ -112,8 +109,8 @@ export default function RelayerButton() {
             <button
               className={`px-8 py-4 rounded-xl text-xl font-bold transition-all transform hover:scale-105 shadow-lg text-white ${
                 isPending ||
-                inboundingMsgs ||
-                (isSuccess && gameState !== "RELAYER_FINISHED") ||
+                gameState === "WAITING_RELAYER" ||
+                gameState === "RELAYER_FINISHED" ||
                 chainId != blockchains[moveNumber % 2]
                   ? "bg-gray-400 cursor-not-allowed"
                   : "bg-[#F6851B] hover:bg-[#E2761B]"
@@ -121,14 +118,12 @@ export default function RelayerButton() {
               onClick={() => handleInboundMsgs()}
               disabled={
                 isPending ||
-                inboundingMsgs ||
-                (isSuccess && gameState !== "RELAYER_FINISHED") ||
+                gameState === "WAITING_RELAYER" ||
+                gameState === "RELAYER_FINISHED" ||
                 chainId != blockchains[moveNumber % 2]
               }
             >
-              {isPending ||
-              inboundingMsgs ||
-              (isSuccess && gameState !== "RELAYER_FINISHED") ? (
+              {isPending || gameState === "WAITING_RELAYER" ? (
                 <div className="flex items-center justify-center">
                   <div className="animate-spin rounded-full h-6 w-6 border-b-2 border-white"></div>
                 </div>
@@ -158,7 +153,7 @@ export default function RelayerButton() {
             Error: {writeError.message}
           </div>
         )}
-        {isSuccess && gameState !== "RELAYER_FINISHED" && (
+        {gameState === "WAITING_RELAYER" && (
           <div className="mt-4 p-4 bg-blue-100 border border-blue-400 text-blue-700 rounded">
             Waiting for relayer transaction confirmation...
           </div>
@@ -168,7 +163,7 @@ export default function RelayerButton() {
             Transaction successful!
           </div>
         )}
-        {!inboundingMsgs && gameState === "RELAYER_FINISHED" && (
+        {gameState === "RELAYER_FINISHED" && (
           <div className="flex items-center justify-center gap-4">
             <button
               className="bg-[#F6851B] hover:bg-[#E2761B] px-8 py-4 rounded-xl text-xl font-bold transition-all transform hover:scale-105 shadow-lg text-white"
